@@ -1,5 +1,12 @@
 # TradePilot
 
+## 개발 규칙
+
+커밋 메시지와 Pull Request 제목·본문은 한글 작성을 원칙으로 합니다. 타입 식별자, 코드, 명령어, 파일 경로와 제품 고유명사는 예외로 허용합니다.
+
+- [기여 및 커밋·PR 규격](CONTRIBUTING.md)
+- 로컬 커밋 템플릿 적용: `git config commit.template .gitmessage`
+
 Spring WebFlux 기반 실시간 주식 시세 수집 애플리케이션의 시작 프로젝트입니다.
 
 ## 기술 기준
