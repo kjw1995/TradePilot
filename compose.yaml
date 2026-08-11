@@ -1,0 +1,40 @@
+services:
+  mysql:
+    build:
+      context: ./docker/mysql
+    image: tradepilot-mysql:local
+    container_name: tradepilot-mysql
+    environment:
+      MYSQL_DATABASE: tradepilot
+      MYSQL_USER: tradepilot
+      MYSQL_PASSWORD: tradepilot
+      MYSQL_ROOT_PASSWORD: local-root-password
+      TZ: Asia/Seoul
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-plocal-root-password"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    build:
+      context: ./docker/redis
+    image: tradepilot-redis:local
+    container_name: tradepilot-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  mysql-data:
+  redis-data:

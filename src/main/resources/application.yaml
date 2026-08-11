@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: tradepilot
+  r2dbc:
+    url: ${DB_R2DBC_URL:r2dbc:mysql://localhost:3306/tradepilot}
+    username: ${DB_USERNAME:tradepilot}
+    password: ${DB_PASSWORD:tradepilot}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+  flyway:
+    url: ${DB_JDBC_URL:jdbc:mysql://localhost:3306/tradepilot}
+    user: ${DB_USERNAME:tradepilot}
+    password: ${DB_PASSWORD:tradepilot}
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      repositories:
+        enabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+tradepilot:
+  market-data:
+    latest-quote-ttl: 24h
+    simulation-fixed-delay: 1s
+
+logging:
+  level:
+    com.kjw.tradepilot: INFO
