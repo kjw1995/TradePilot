@@ -43,7 +43,12 @@ docker image ls "tradepilot-*"
 
 시뮬레이터는 삼성전자(`005930`)와 SK하이닉스(`000660`) 틱을 1초마다 생성합니다.
 
+브라우저에서 `http://localhost:8080`을 열면 Spring Boot가 직접 제공하는 실시간 대시보드를 볼 수 있습니다. 별도 프론트엔드 개발 서버나 CORS 설정은 필요하지 않습니다.
+
 ```powershell
+# 내장 실시간 대시보드
+Start-Process "http://localhost:8080"
+
 # 실시간 SSE 구독
 curl.exe -N "http://localhost:8080/api/v1/market-data/stream?symbols=005930,000660"
 
