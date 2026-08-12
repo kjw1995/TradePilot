@@ -32,6 +32,9 @@ class TradepilotApplicationTests {
                 .value(body -> {
                     assertThat(body).contains("TradePilot · Live Market");
                     assertThat(body).contains("data-testid=\"price-chart\"");
+                    assertThat(body).contains("data-testid=\"portfolio-comparison\"");
+                    assertThat(body).contains("id=\"watchlist-form\"");
+                    assertThat(body).contains("id=\"quote-list\"");
                 });
     }
 

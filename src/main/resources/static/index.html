@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#07100c">
+    <meta name="theme-color" content="#f6f9f7">
     <meta name="description" content="TradePilot 실시간 주식 시세 모니터링 대시보드">
     <title>TradePilot · Live Market</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -31,6 +31,10 @@
             <a class="nav-item" href="#watchlist">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
                 관심 종목
+            </a>
+            <a class="nav-item" href="#portfolio">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16v12H4zM7 7.5V5h10v2.5M4 12h16M15.5 15.5h2"/></svg>
+                내 포트폴리오
             </a>
             <a class="nav-item" href="#activity">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
@@ -103,6 +107,63 @@
             </article>
         </section>
 
+        <section class="panel portfolio-panel" id="portfolio" data-testid="portfolio-comparison" aria-labelledby="portfolio-title">
+            <header class="portfolio-header">
+                <div class="account-heading">
+                    <span class="account-mark" aria-hidden="true">MY</span>
+                    <div>
+                        <span class="panel-kicker">MY PORTFOLIO</span>
+                        <h2 id="portfolio-title"><span id="account-name">내 투자계좌</span> <small id="account-meta">불러오는 중</small></h2>
+                    </div>
+                </div>
+                <div class="portfolio-actions">
+                    <span id="portfolio-synced-at">계좌 정보를 불러오고 있습니다.</span>
+                    <button class="refresh-button" id="portfolio-refresh" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9A7 7 0 0 1 18 6l2 5M17.9 15A7 7 0 0 1 6 18l-2-5"/></svg>
+                        새로고침
+                    </button>
+                </div>
+            </header>
+
+            <div class="portfolio-summary" aria-label="내 계좌 평가 요약">
+                <article class="portfolio-stat portfolio-stat--hero">
+                    <span>총 자산</span>
+                    <strong id="portfolio-total-assets">--</strong>
+                    <small>예수금 + 보유 종목 평가액</small>
+                </article>
+                <article class="portfolio-stat">
+                    <span>투자 원금</span>
+                    <strong id="portfolio-invested">--</strong>
+                    <small id="portfolio-evaluation">평가액 --</small>
+                </article>
+                <article class="portfolio-stat">
+                    <span>평가 손익</span>
+                    <strong id="portfolio-profit-loss">--</strong>
+                    <small id="portfolio-return-rate">수익률 --</small>
+                </article>
+                <article class="portfolio-stat">
+                    <span>예수금</span>
+                    <strong id="portfolio-cash">--</strong>
+                    <small>주문 가능 현금</small>
+                </article>
+            </div>
+
+            <div class="table-wrap portfolio-table-wrap">
+                <table class="portfolio-table">
+                    <thead>
+                    <tr><th>보유 종목</th><th>수량</th><th>평균 매수가</th><th>현재가</th><th>투자 원금</th><th>평가 금액</th><th>평가 손익</th></tr>
+                    </thead>
+                    <tbody id="portfolio-body">
+                    <tr class="empty-row"><td colspan="7">내 계좌 정보를 불러오고 있습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <footer class="portfolio-footer">
+                <span id="portfolio-quote-status"><i class="legend-dot"></i>시세 연결 대기 중</span>
+                <span>평균 매수가와 실시간 현재가를 비교합니다.</span>
+            </footer>
+        </section>
+
         <section class="market-workspace" id="watchlist">
             <article class="panel watchlist-panel">
                 <header class="panel-header">
@@ -110,20 +171,39 @@
                         <span class="panel-kicker">WATCHLIST</span>
                         <h2>관심 종목</h2>
                     </div>
-                    <span class="market-tag">KRX</span>
+                    <div class="watchlist-header-actions">
+                        <span class="market-tag">최대 30개</span>
+                        <button class="watchlist-add-toggle" id="watchlist-add-toggle" type="button" aria-expanded="false" aria-controls="watchlist-form">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            종목 추가
+                        </button>
+                    </div>
                 </header>
 
-                <div class="quote-list" role="list" aria-label="관심 종목 시세">
-                    <button class="quote-item selected" type="button" data-symbol="005930" data-testid="quote-005930" aria-pressed="true">
-                        <span class="quote-symbol"><b>005930</b><small>삼성전자</small></span>
-                        <svg class="mini-chart" viewBox="0 0 96 34" preserveAspectRatio="none" aria-hidden="true"><polyline data-sparkline="005930" points="0,25 96,25"/></svg>
-                        <span class="quote-price"><b data-price="005930">--</b><small data-change="005930">대기 중</small></span>
-                    </button>
-                    <button class="quote-item" type="button" data-symbol="000660" data-testid="quote-000660" aria-pressed="false">
-                        <span class="quote-symbol"><b>000660</b><small>SK하이닉스</small></span>
-                        <svg class="mini-chart" viewBox="0 0 96 34" preserveAspectRatio="none" aria-hidden="true"><polyline data-sparkline="000660" points="0,25 96,25"/></svg>
-                        <span class="quote-price"><b data-price="000660">--</b><small data-change="000660">대기 중</small></span>
-                    </button>
+                <form class="watchlist-form" id="watchlist-form" hidden>
+                    <label>
+                        <span>시장</span>
+                        <select id="watchlist-market" name="market" required>
+                            <option value="KRX">KRX</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>종목 코드</span>
+                        <input id="watchlist-symbol" name="symbol" maxlength="20" placeholder="예: 035420" autocomplete="off" required>
+                    </label>
+                    <label>
+                        <span>종목명</span>
+                        <input id="watchlist-name" name="name" maxlength="100" placeholder="예: NAVER" autocomplete="off" required>
+                    </label>
+                    <div class="watchlist-form-actions">
+                        <button class="watchlist-cancel" id="watchlist-cancel" type="button">취소</button>
+                        <button class="watchlist-submit" type="submit">추가</button>
+                    </div>
+                    <p class="watchlist-message" id="watchlist-message" role="status" aria-live="polite"></p>
+                </form>
+
+                <div class="quote-list" id="quote-list" role="list" aria-label="관심 종목 시세" aria-busy="true">
+                    <div class="watchlist-empty">관심종목을 불러오고 있습니다.</div>
                 </div>
 
                 <footer class="panel-footer">
@@ -150,8 +230,8 @@
                     <svg viewBox="0 0 800 300" preserveAspectRatio="none" role="img" aria-label="선택 종목 실시간 가격 차트">
                         <defs>
                             <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#37e889" stop-opacity="0.28"/>
-                                <stop offset="100%" stop-color="#37e889" stop-opacity="0"/>
+                                <stop offset="0%" stop-color="#168449" stop-opacity="0.22"/>
+                                <stop offset="100%" stop-color="#168449" stop-opacity="0"/>
                             </linearGradient>
                         </defs>
                         <path id="price-area" class="price-area" d="M0 250 L800 250 L800 300 L0 300 Z"/>
@@ -201,6 +281,7 @@
 
 <div class="mobile-menu" id="mobile-menu" hidden>
     <a href="#overview">개요</a>
+    <a href="#portfolio">내 포트폴리오</a>
     <a href="#watchlist">관심 종목</a>
     <a href="#activity">실시간 체결</a>
 </div>
