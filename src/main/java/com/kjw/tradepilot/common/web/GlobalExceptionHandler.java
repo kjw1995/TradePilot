@@ -1,5 +1,6 @@
 package com.kjw.tradepilot.common.web;
 
+import com.kjw.tradepilot.watchlist.application.WatchlistItemAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -11,6 +12,13 @@ import java.util.List;
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    @ExceptionHandler(WatchlistItemAlreadyExistsException.class)
+    ResponseEntity<ApiError> handleWatchlistConflict(WatchlistItemAlreadyExistsException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ApiError("WATCHLIST_ITEM_EXISTS", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
     @ExceptionHandler(WebExchangeBindException.class)
     ResponseEntity<ApiError> handleValidation(WebExchangeBindException exception) {
         List<String> details = exception.getFieldErrors().stream()

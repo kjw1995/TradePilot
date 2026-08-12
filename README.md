@@ -71,6 +71,42 @@ curl.exe -X POST "http://localhost:8080/api/v1/market-data/ticks" `
   -d '{"symbol":"005930","market":"KRX","price":81000,"volume":10,"tradedAt":"2026-08-11T00:00:00Z","source":"LOCAL"}'
 ```
 
+## 내 포트폴리오 비교
+
+대시보드의 `내 포트폴리오` 영역은 MySQL에 저장된 계좌·보유 종목과 Redis/MySQL의 최신 시세를 결합해 총자산, 평가금액, 평가손익과 수익률을 보여줍니다. 최초 화면 로드 시 스냅샷 API를 호출하고, 이후에는 기존 시장 데이터 SSE 이벤트로 보유 종목 평가를 실시간 갱신합니다.
+
+```powershell
+curl.exe "http://localhost:8080/api/v1/portfolio/accounts/local-account/summary"
+```
+
+로컬 개발용 `local-account`와 삼성전자·SK하이닉스 보유 정보는 Flyway `V2__create_portfolio.sql`에서 생성합니다. 계좌와 보유 원장은 정합성이 중요한 관계형 데이터이므로 MySQL에 저장하며, Redis에는 원장 데이터를 중복 저장하지 않고 최신 시세 캐시만 유지합니다.
+
+실제 증권사 연동 시에는 증권사 계좌 API 응답을 `portfolio` 애플리케이션 포트에 맞춰 동기화하는 어댑터를 추가하고, 토큰과 계좌번호 원문은 저장소나 프론트엔드에 노출하지 않아야 합니다.
+
+## 관심종목 관리
+
+관심종목은 MySQL을 원장으로 사용하며 계정별 최대 30개까지 저장합니다. 대시보드에서 종목코드와 종목명을 입력해 추가하고, 위·아래 이동 버튼으로 표시 순서를 바꾸거나 삭제할 수 있습니다. 목록이 바뀌면 화면의 SSE 구독 대상도 자동으로 다시 연결됩니다.
+
+```powershell
+# 목록 조회
+curl.exe "http://localhost:8080/api/v1/accounts/local-account/watchlist"
+
+# 종목 추가
+curl.exe -X POST "http://localhost:8080/api/v1/accounts/local-account/watchlist/items" `
+  -H "Content-Type: application/json" `
+  -d '{"symbol":"035420","market":"KRX","name":"NAVER"}'
+
+# 전체 순서 변경: 현재 목록의 모든 종목을 정확히 한 번씩 전달
+curl.exe -X PATCH "http://localhost:8080/api/v1/accounts/local-account/watchlist/order" `
+  -H "Content-Type: application/json" `
+  -d '{"items":[{"market":"KRX","symbol":"035420"},{"market":"KRX","symbol":"005930"},{"market":"KRX","symbol":"000660"}]}'
+
+# 종목 삭제
+curl.exe -X DELETE "http://localhost:8080/api/v1/accounts/local-account/watchlist/items/035420?market=KRX"
+```
+
+로컬 기본 관심종목은 Flyway `V3__create_watchlist.sql`에서 생성합니다. 현재 로컬 시뮬레이터가 KRX 두 종목만 생성하므로 화면 입력도 KRX로 제한했으며, 실제 증권사 종목 검색 API가 연결되면 해외 시장 선택과 자동완성 검색을 확장할 수 있습니다.
+
 ## 데이터 흐름
 
 ```text

@@ -1,20 +1,23 @@
 (() => {
     'use strict';
 
-    const symbols = {
-        '005930': { name: '삼성전자', market: 'KRX' },
-        '000660': { name: 'SK하이닉스', market: 'KRX' }
-    };
+    const symbols = {};
+    const portfolioAccountId = 'local-account';
 
     const state = {
-        selectedSymbol: '005930',
+        selectedSymbol: null,
+        watchlist: [],
         quotes: new Map(),
-        histories: new Map(Object.keys(symbols).map(symbol => [symbol, []])),
+        histories: new Map(),
         sessionOpen: new Map(),
         eventCount: 0,
         reconnectDelay: 1000,
         eventSource: null,
-        reconnectTimer: null
+        reconnectTimer: null,
+        portfolio: null,
+        portfolioLoading: false,
+        watchlistLoading: false,
+        watchlistMutating: false
     };
 
     const numberFormat = new Intl.NumberFormat('ko-KR');
@@ -33,6 +36,16 @@
 
     function formatPrice(value) {
         return value == null ? '--' : `${numberFormat.format(value)}원`;
+    }
+
+    function formatSignedPrice(value) {
+        if (value == null) return '--';
+        const sign = value > 0 ? '+' : '';
+        return `${sign}${numberFormat.format(value)}원`;
+    }
+
+    function valueDirection(value) {
+        return value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : '';
     }
 
     function calculateChange(symbol, price) {
@@ -90,13 +103,26 @@
     }
 
     function renderSparkline(symbol) {
-        sparklineElement(symbol).setAttribute('points', normalizeHistory(state.histories.get(symbol), 96, 30));
+        sparklineElement(symbol)?.setAttribute('points', normalizeHistory(state.histories.get(symbol) ?? [], 96, 30));
     }
 
     function renderSelectedChart() {
         const symbol = state.selectedSymbol;
+        if (!symbol || !symbols[symbol]) {
+            byId('selected-market').textContent = '관심 종목';
+            byId('chart-title').textContent = '종목을 추가해 주세요';
+            byId('selected-price').textContent = '--';
+            byId('selected-change').textContent = '선택된 종목이 없습니다';
+            byId('selected-change').className = '';
+            byId('session-high').textContent = '--';
+            byId('session-low').textContent = '--';
+            byId('selected-volume').textContent = '--';
+            byId('selected-source').textContent = '--';
+            byId('empty-chart').classList.remove('hidden');
+            return;
+        }
         const quote = state.quotes.get(symbol);
-        const history = state.histories.get(symbol);
+        const history = state.histories.get(symbol) ?? [];
         const meta = symbols[symbol];
 
         byId('selected-market').textContent = `${meta.market} · ${symbol}`;
@@ -153,6 +179,418 @@
         renderSparkline(symbol);
     }
 
+    function syncSymbolRegistry() {
+        const nextSymbols = {};
+        state.watchlist.forEach(item => {
+            nextSymbols[item.symbol] = { name: item.name, market: item.market };
+        });
+        state.portfolio?.positions.forEach(position => {
+            if (!nextSymbols[position.symbol]) {
+                nextSymbols[position.symbol] = { name: position.name, market: position.market };
+            }
+        });
+
+        Object.keys(symbols).forEach(symbol => delete symbols[symbol]);
+        Object.assign(symbols, nextSymbols);
+        Object.keys(symbols).forEach(symbol => {
+            if (!state.histories.has(symbol)) state.histories.set(symbol, []);
+        });
+    }
+
+    function setWatchlistMessage(message, error = false) {
+        const node = byId('watchlist-message');
+        node.textContent = message;
+        node.classList.toggle('is-error', error);
+    }
+
+    function createQuoteItem(item, index) {
+        const row = document.createElement('div');
+        row.className = `quote-item${state.selectedSymbol === item.symbol ? ' selected' : ''}`;
+        row.dataset.symbol = item.symbol;
+        row.dataset.market = item.market;
+        row.setAttribute('role', 'listitem');
+
+        const select = document.createElement('button');
+        select.className = 'quote-select';
+        select.type = 'button';
+        select.dataset.action = 'select';
+        select.dataset.testid = `quote-${item.symbol}`;
+        select.setAttribute('aria-pressed', String(state.selectedSymbol === item.symbol));
+        select.setAttribute('aria-label', `${item.name} ${item.symbol} 차트 보기`);
+
+        const symbol = document.createElement('span');
+        symbol.className = 'quote-symbol';
+        const code = document.createElement('b');
+        code.textContent = item.symbol;
+        const name = document.createElement('small');
+        name.textContent = item.name;
+        symbol.append(code, name);
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.classList.add('mini-chart');
+        svg.setAttribute('viewBox', '0 0 96 34');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('aria-hidden', 'true');
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        line.dataset.sparkline = item.symbol;
+        line.setAttribute('points', normalizeHistory(state.histories.get(item.symbol) ?? [], 96, 30));
+        svg.appendChild(line);
+
+        const price = document.createElement('span');
+        price.className = 'quote-price';
+        const priceValue = document.createElement('b');
+        priceValue.dataset.price = item.symbol;
+        priceValue.textContent = '--';
+        const change = document.createElement('small');
+        change.dataset.change = item.symbol;
+        change.textContent = '대기 중';
+        price.append(priceValue, change);
+        select.append(symbol, svg, price);
+
+        const actions = document.createElement('div');
+        actions.className = 'quote-actions';
+        [
+            { action: 'up', label: '위로 이동', text: '↑', disabled: index === 0 },
+            { action: 'down', label: '아래로 이동', text: '↓', disabled: index === state.watchlist.length - 1 },
+            { action: 'delete', label: '관심종목 삭제', text: '×', disabled: false }
+        ].forEach(config => {
+            const button = document.createElement('button');
+            button.className = `quote-action${config.action === 'delete' ? ' quote-action--delete' : ''}`;
+            button.type = 'button';
+            button.dataset.action = config.action;
+            button.textContent = config.text;
+            button.setAttribute('aria-label', `${item.name} ${config.label}`);
+            button.disabled = config.disabled || state.watchlistMutating;
+            actions.appendChild(button);
+        });
+
+        row.append(select, actions);
+        return row;
+    }
+
+    function renderWatchlist() {
+        const list = byId('quote-list');
+        list.replaceChildren();
+        list.setAttribute('aria-busy', String(state.watchlistLoading));
+        byId('watch-count').textContent = numberFormat.format(state.watchlist.length);
+
+        if (state.watchlistLoading) {
+            const loading = document.createElement('div');
+            loading.className = 'watchlist-empty';
+            loading.textContent = '관심종목을 불러오고 있습니다.';
+            list.appendChild(loading);
+            return;
+        }
+        if (!state.watchlist.length) {
+            const empty = document.createElement('div');
+            empty.className = 'watchlist-empty';
+            empty.textContent = '관심종목이 없습니다. 종목 추가 버튼으로 시작해 보세요.';
+            list.appendChild(empty);
+            return;
+        }
+
+        state.watchlist.forEach((item, index) => list.appendChild(createQuoteItem(item, index)));
+        state.watchlist.forEach(item => {
+            const quote = state.quotes.get(item.symbol);
+            if (quote) renderQuote(quote, null);
+        });
+    }
+
+    function ensureSelectedWatchlistItem() {
+        const selectedExists = state.watchlist.some(item => item.symbol === state.selectedSymbol);
+        if (!selectedExists) state.selectedSymbol = state.watchlist[0]?.symbol ?? null;
+    }
+
+    async function readApiError(response, fallback) {
+        try {
+            const body = await response.json();
+            return body.message || fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
+    async function fetchWatchlist() {
+        state.watchlistLoading = true;
+        renderWatchlist();
+        try {
+            const response = await fetch(`/api/v1/accounts/${portfolioAccountId}/watchlist`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error(await readApiError(response, `관심종목 조회 실패 (${response.status})`));
+            state.watchlist = await response.json();
+            ensureSelectedWatchlistItem();
+            syncSymbolRegistry();
+            setWatchlistMessage('');
+        } catch (error) {
+            console.error('Unable to load watchlist', error);
+            state.watchlist = [];
+            ensureSelectedWatchlistItem();
+            syncSymbolRegistry();
+            setWatchlistMessage(error.message, true);
+        } finally {
+            state.watchlistLoading = false;
+            renderWatchlist();
+            renderSelectedChart();
+        }
+    }
+
+    async function addWatchlistItem(form) {
+        if (state.watchlistMutating) return;
+        const formData = new FormData(form);
+        state.watchlistMutating = true;
+        setWatchlistMessage('종목을 추가하고 있습니다.');
+        form.querySelectorAll('button, input, select').forEach(control => control.disabled = true);
+        try {
+            const response = await fetch(`/api/v1/accounts/${portfolioAccountId}/watchlist/items`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({
+                    market: formData.get('market'),
+                    symbol: String(formData.get('symbol')).trim().toUpperCase(),
+                    name: String(formData.get('name')).trim()
+                })
+            });
+            if (!response.ok) throw new Error(await readApiError(response, `종목 추가 실패 (${response.status})`));
+            form.reset();
+            await fetchWatchlist();
+            await fetchLatestQuotes();
+            connectStream();
+            setWatchlistFormOpen(false);
+        } catch (error) {
+            console.error('Unable to add watchlist item', error);
+            setWatchlistMessage(error.message, true);
+        } finally {
+            state.watchlistMutating = false;
+            form.querySelectorAll('button, input, select').forEach(control => control.disabled = false);
+            renderWatchlist();
+        }
+    }
+
+    async function removeWatchlistItem(item) {
+        if (state.watchlistMutating) return;
+        state.watchlistMutating = true;
+        renderWatchlist();
+        try {
+            const response = await fetch(
+                `/api/v1/accounts/${portfolioAccountId}/watchlist/items/${encodeURIComponent(item.symbol)}?market=${encodeURIComponent(item.market)}`,
+                { method: 'DELETE' }
+            );
+            if (!response.ok) throw new Error(await readApiError(response, `종목 삭제 실패 (${response.status})`));
+            await fetchWatchlist();
+            connectStream();
+        } catch (error) {
+            console.error('Unable to remove watchlist item', error);
+            setWatchlistMessage(error.message, true);
+        } finally {
+            state.watchlistMutating = false;
+            renderWatchlist();
+        }
+    }
+
+    async function moveWatchlistItem(item, offset) {
+        if (state.watchlistMutating) return;
+        const currentIndex = state.watchlist.findIndex(candidate =>
+            candidate.symbol === item.symbol && candidate.market === item.market);
+        const nextIndex = currentIndex + offset;
+        if (currentIndex < 0 || nextIndex < 0 || nextIndex >= state.watchlist.length) return;
+
+        const nextOrder = [...state.watchlist];
+        [nextOrder[currentIndex], nextOrder[nextIndex]] = [nextOrder[nextIndex], nextOrder[currentIndex]];
+        state.watchlistMutating = true;
+        renderWatchlist();
+        try {
+            const response = await fetch(`/api/v1/accounts/${portfolioAccountId}/watchlist/order`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({
+                    items: nextOrder.map(candidate => ({ market: candidate.market, symbol: candidate.symbol }))
+                })
+            });
+            if (!response.ok) throw new Error(await readApiError(response, `순서 변경 실패 (${response.status})`));
+            state.watchlist = await response.json();
+            setWatchlistMessage('관심종목 순서를 저장했습니다.');
+        } catch (error) {
+            console.error('Unable to reorder watchlist', error);
+            setWatchlistMessage(error.message, true);
+        } finally {
+            state.watchlistMutating = false;
+            renderWatchlist();
+        }
+    }
+
+    function setWatchlistFormOpen(open) {
+        const form = byId('watchlist-form');
+        form.hidden = !open;
+        byId('watchlist-add-toggle').setAttribute('aria-expanded', String(open));
+        if (open) {
+            setWatchlistMessage('');
+            byId('watchlist-symbol').focus();
+        }
+    }
+
+    function setPortfolioStatus(status, message) {
+        const footer = document.querySelector('.portfolio-footer');
+        footer.dataset.status = status;
+        byId('portfolio-quote-status').lastChild.textContent = message;
+    }
+
+    function recalculatePortfolioTotals() {
+        if (!state.portfolio) return;
+        const positions = state.portfolio.positions;
+        const valuedPositions = positions.filter(position => position.quoteAvailable);
+        const investedAmount = positions.reduce((sum, position) => sum + Number(position.costBasis), 0);
+        const valuedCost = valuedPositions.reduce((sum, position) => sum + Number(position.costBasis), 0);
+        const evaluationAmount = valuedPositions.reduce((sum, position) => sum + Number(position.marketValue), 0);
+        const profitLoss = evaluationAmount - valuedCost;
+        const cashBalance = Number(state.portfolio.totals.cashBalance);
+
+        state.portfolio.totals = {
+            ...state.portfolio.totals,
+            cashBalance,
+            investedAmount,
+            evaluationAmount,
+            totalAssets: cashBalance + evaluationAmount,
+            profitLoss,
+            returnRate: valuedCost === 0 ? 0 : (profitLoss / valuedCost) * 100,
+            valuedPositionCount: valuedPositions.length,
+            totalPositionCount: positions.length
+        };
+    }
+
+    function appendPortfolioCell(row, primary, detail = null, className = '') {
+        const cell = document.createElement('td');
+        if (className) cell.className = className;
+        const main = document.createElement('span');
+        main.textContent = primary;
+        cell.appendChild(main);
+        if (detail) {
+            const secondary = document.createElement('small');
+            secondary.className = 'portfolio-cell-detail';
+            secondary.textContent = detail;
+            cell.appendChild(secondary);
+        }
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function renderPortfolioPositions() {
+        const body = byId('portfolio-body');
+        body.replaceChildren();
+
+        if (!state.portfolio.positions.length) {
+            const row = document.createElement('tr');
+            row.className = 'empty-row';
+            const cell = document.createElement('td');
+            cell.colSpan = 7;
+            cell.textContent = '보유 중인 종목이 없습니다.';
+            row.appendChild(cell);
+            body.appendChild(row);
+            return;
+        }
+
+        state.portfolio.positions.forEach(position => {
+            const row = document.createElement('tr');
+            row.dataset.portfolioSymbol = position.symbol;
+            appendPortfolioCell(row, position.name, `${position.market} · ${position.symbol}`, 'portfolio-symbol-cell');
+            appendPortfolioCell(row, `${numberFormat.format(position.quantity)}주`);
+            appendPortfolioCell(row, formatPrice(position.averagePrice));
+            appendPortfolioCell(row, position.quoteAvailable ? formatPrice(position.currentPrice) : '시세 없음', position.quoteAvailable ? '실시간' : '확인 필요');
+            appendPortfolioCell(row, formatPrice(position.costBasis));
+            appendPortfolioCell(row, position.quoteAvailable ? formatPrice(position.marketValue) : '--');
+
+            const profitCell = appendPortfolioCell(
+                row,
+                position.quoteAvailable ? formatSignedPrice(position.profitLoss) : '--',
+                position.quoteAvailable ? `${position.returnRate > 0 ? '+' : ''}${Number(position.returnRate).toFixed(2)}%` : '시세 대기 중',
+                'portfolio-profit'
+            );
+            const directionClass = valueDirection(Number(position.profitLoss));
+            if (directionClass) profitCell.classList.add(directionClass);
+            body.appendChild(row);
+        });
+    }
+
+    function renderPortfolio() {
+        if (!state.portfolio) return;
+        const { account, totals } = state.portfolio;
+        const profitNode = byId('portfolio-profit-loss');
+        const returnNode = byId('portfolio-return-rate');
+
+        byId('account-name').textContent = account.displayName;
+        byId('account-meta').textContent = `${account.broker} · ${account.maskedAccountNumber}`;
+        byId('portfolio-synced-at').textContent = `${dateTimeFormat.format(new Date(account.syncedAt))} 계좌 동기화`;
+        byId('portfolio-total-assets').textContent = formatPrice(totals.totalAssets);
+        byId('portfolio-invested').textContent = formatPrice(totals.investedAmount);
+        byId('portfolio-evaluation').textContent = `평가액 ${formatPrice(totals.evaluationAmount)}`;
+        profitNode.textContent = formatSignedPrice(totals.profitLoss);
+        profitNode.className = valueDirection(Number(totals.profitLoss));
+        returnNode.textContent = `수익률 ${Number(totals.returnRate) > 0 ? '+' : ''}${Number(totals.returnRate).toFixed(2)}%`;
+        returnNode.className = valueDirection(Number(totals.returnRate));
+        byId('portfolio-cash').textContent = formatPrice(totals.cashBalance);
+        setPortfolioStatus(
+            totals.valuedPositionCount === totals.totalPositionCount ? 'live' : 'waiting',
+            ` ${totals.valuedPositionCount}/${totals.totalPositionCount}개 종목 실시간 비교 중`
+        );
+        renderPortfolioPositions();
+    }
+
+    function applyPortfolioTick(tick) {
+        if (!state.portfolio) return;
+        const position = state.portfolio.positions.find(item => item.symbol === tick.symbol && item.market === tick.market);
+        if (!position) return;
+
+        const currentPrice = Number(tick.price);
+        position.currentPrice = currentPrice;
+        position.marketValue = currentPrice * position.quantity;
+        position.profitLoss = position.marketValue - position.costBasis;
+        position.returnRate = position.costBasis === 0 ? 0 : (position.profitLoss / position.costBasis) * 100;
+        position.quoteAvailable = true;
+        position.quotedAt = tick.tradedAt;
+        recalculatePortfolioTotals();
+        renderPortfolio();
+    }
+
+    async function fetchPortfolio() {
+        if (state.portfolioLoading) return;
+        state.portfolioLoading = true;
+        const button = byId('portfolio-refresh');
+        button.disabled = true;
+        button.classList.add('is-loading');
+
+        try {
+            const response = await fetch(`/api/v1/portfolio/accounts/${portfolioAccountId}/summary`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error(`Portfolio request failed: ${response.status}`);
+            const portfolio = await response.json();
+            portfolio.positions = portfolio.positions.map(position => ({
+                ...position,
+                quantity: Number(position.quantity),
+                averagePrice: Number(position.averagePrice),
+                costBasis: Number(position.costBasis),
+                currentPrice: position.currentPrice == null ? null : Number(position.currentPrice),
+                marketValue: position.marketValue == null ? null : Number(position.marketValue),
+                profitLoss: position.profitLoss == null ? null : Number(position.profitLoss),
+                returnRate: position.returnRate == null ? null : Number(position.returnRate)
+            }));
+            state.portfolio = portfolio;
+            syncSymbolRegistry();
+            recalculatePortfolioTotals();
+            renderPortfolio();
+        } catch (error) {
+            console.error('Unable to load portfolio', error);
+            setPortfolioStatus('error', ' 계좌 정보를 불러오지 못했습니다');
+            const body = byId('portfolio-body');
+            body.innerHTML = '<tr class="empty-row"><td colspan="7">계좌 API 연결을 확인해 주세요.</td></tr>';
+            byId('portfolio-synced-at').textContent = '계좌 동기화 실패';
+        } finally {
+            state.portfolioLoading = false;
+            button.disabled = false;
+            button.classList.remove('is-loading');
+        }
+    }
+
     function appendActivity(tick, direction) {
         const body = byId('activity-body');
         body.querySelector('.empty-row')?.remove();
@@ -188,8 +626,11 @@
         history.push({ price, tradedAt: tick.tradedAt });
         if (history.length > 60) history.shift();
 
-        renderQuote(tick, previousPrice);
-        if (state.selectedSymbol === tick.symbol) renderSelectedChart();
+        if (priceElement(tick.symbol)) {
+            renderQuote(tick, previousPrice);
+            if (state.selectedSymbol === tick.symbol) renderSelectedChart();
+        }
+        applyPortfolioTick(tick);
 
         if (!historical) {
             state.eventCount += 1;
@@ -205,7 +646,8 @@
     async function fetchLatestQuotes() {
         await Promise.all(Object.keys(symbols).map(async symbol => {
             try {
-                const response = await fetch(`/api/v1/market-data/quotes/${symbol}?market=KRX`, { headers: { Accept: 'application/json' } });
+                const market = symbols[symbol].market;
+                const response = await fetch(`/api/v1/market-data/quotes/${symbol}?market=${encodeURIComponent(market)}`, { headers: { Accept: 'application/json' } });
                 if (response.ok) applyTick(await response.json(), { historical: true });
             } catch (error) {
                 console.warn(`Unable to load latest quote for ${symbol}`, error);
@@ -224,6 +666,11 @@
         state.eventSource?.close();
         setConnection('connecting', '연결 중');
         const symbolList = Object.keys(symbols).join(',');
+        if (!symbolList) {
+            state.eventSource = null;
+            setConnection('offline', '구독 없음');
+            return;
+        }
         const source = new EventSource(`/api/v1/market-data/stream?symbols=${symbolList}`);
         state.eventSource = source;
 
@@ -247,14 +694,35 @@
         document.querySelectorAll('.quote-item').forEach(item => {
             const selected = item.dataset.symbol === symbol;
             item.classList.toggle('selected', selected);
-            item.setAttribute('aria-pressed', String(selected));
+            item.querySelector('.quote-select')?.setAttribute('aria-pressed', String(selected));
         });
         renderSelectedChart();
     }
 
     function bindInteractions() {
-        document.querySelectorAll('.quote-item').forEach(item => {
-            item.addEventListener('click', () => selectSymbol(item.dataset.symbol));
+        byId('quote-list').addEventListener('click', event => {
+            const action = event.target.closest('[data-action]');
+            const row = event.target.closest('.quote-item');
+            if (!action || !row) return;
+            const item = state.watchlist.find(candidate =>
+                candidate.symbol === row.dataset.symbol && candidate.market === row.dataset.market);
+            if (!item) return;
+            if (action.dataset.action === 'select') selectSymbol(item.symbol);
+            if (action.dataset.action === 'up') moveWatchlistItem(item, -1);
+            if (action.dataset.action === 'down') moveWatchlistItem(item, 1);
+            if (action.dataset.action === 'delete'
+                && window.confirm(`${item.name}(${item.symbol})을 관심종목에서 삭제할까요?`)) {
+                removeWatchlistItem(item);
+            }
+        });
+
+        byId('watchlist-add-toggle').addEventListener('click', () => {
+            setWatchlistFormOpen(byId('watchlist-form').hidden);
+        });
+        byId('watchlist-cancel').addEventListener('click', () => setWatchlistFormOpen(false));
+        byId('watchlist-form').addEventListener('submit', event => {
+            event.preventDefault();
+            addWatchlistItem(event.currentTarget);
         });
 
         const menuButton = document.querySelector('.menu-button');
@@ -268,12 +736,20 @@
             mobileMenu.hidden = true;
             menuButton.setAttribute('aria-expanded', 'false');
         }));
+
+        byId('portfolio-refresh').addEventListener('click', async () => {
+            await fetchPortfolio();
+            await fetchLatestQuotes();
+            connectStream();
+        });
     }
 
     async function initialize() {
         bindInteractions();
         updateClockAndSession();
         setInterval(updateClockAndSession, 1000);
+        await Promise.all([fetchPortfolio(), fetchWatchlist()]);
+        syncSymbolRegistry();
         await fetchLatestQuotes();
         connectStream();
     }
