@@ -202,12 +202,28 @@ strong, b, td, .market-clock { font-variant-numeric: tabular-nums; }
 .watchlist-add-toggle:hover { border-color: rgba(22,132,73,.42); background: rgba(22,132,73,.14); }
 .watchlist-add-toggle svg { width: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .watchlist-add-toggle[aria-expanded="true"] svg { transform: rotate(45deg); }
-.watchlist-form { display: grid; grid-template-columns: .7fr 1fr 1fr auto; gap: 10px; align-items: end; border-bottom: 1px solid var(--border); background: var(--surface-strong); padding: 16px 18px; }
+.watchlist-form { position: relative; display: grid; grid-template-columns: .7fr minmax(190px,2fr) auto; gap: 10px; align-items: end; border-bottom: 1px solid var(--border); background: var(--surface-strong); padding: 16px 18px; }
 .watchlist-form[hidden] { display: none; }
 .watchlist-form label { display: grid; min-width: 0; gap: 6px; }
-.watchlist-form label > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+.watchlist-form label > span, .instrument-search-field > label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .04em; }
 .watchlist-form input, .watchlist-form select { width: 100%; min-width: 0; height: 38px; border: 1px solid var(--border); border-radius: 8px; outline: 0; background: var(--surface); padding: 0 10px; color: var(--text); font-size: 12px; }
 .watchlist-form input:focus, .watchlist-form select:focus { border-color: rgba(22,132,73,.55); box-shadow: 0 0 0 3px var(--accent-soft); }
+.instrument-search-field { position: relative; display: grid; min-width: 0; gap: 6px; }
+.instrument-search-input { position: relative; display: block; }
+.instrument-search-input svg { position: absolute; top: 50%; left: 11px; z-index: 1; width: 15px; transform: translateY(-50%); fill: none; stroke: var(--subtle); stroke-width: 1.8; stroke-linecap: round; }
+.instrument-search-input input { padding-left: 34px; padding-right: 30px; }
+.instrument-search-input input::-webkit-search-cancel-button { cursor: pointer; }
+.instrument-results { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 20; overflow-y: auto; max-height: 260px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 16px 36px rgba(22,64,39,.14); padding: 5px; }
+.instrument-results[hidden] { display: none; }
+.instrument-result { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: 14px; align-items: center; border: 0; background: transparent; padding: 10px 11px; color: var(--text); text-align: left; cursor: pointer; }
+.instrument-result:hover, .instrument-result.is-active { background: var(--accent-soft); }
+.instrument-result:disabled { cursor: default; opacity: .5; }
+.instrument-result__name { display: grid; min-width: 0; gap: 3px; }
+.instrument-result__name b { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.instrument-result__name small, .instrument-result__meta { color: var(--subtle); font-size: 10px; }
+.instrument-result__meta { text-align: right; white-space: nowrap; }
+.instrument-result-empty { display: block; padding: 18px 12px; color: var(--subtle); font-size: 11px; text-align: center; }
+.instrument-search-field.has-selection input { border-color: rgba(22,132,73,.45); background: var(--accent-soft); color: var(--accent-strong); font-weight: 700; }
 .watchlist-form-actions { display: flex; gap: 6px; }
 .watchlist-form-actions button { height: 38px; border: 1px solid var(--border); padding: 0 11px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .watchlist-cancel { background: var(--surface); color: var(--muted); }
@@ -319,7 +335,8 @@ td.price-down { color: var(--danger); }
     .portfolio-footer { align-items: flex-start; flex-direction: column; gap: 8px; }
     .market-workspace { grid-template-columns: 1fr; }
     .watchlist-panel .panel-header { min-height: 96px; }
-    .watchlist-form { grid-template-columns: 1fr 1fr; }
+    .watchlist-form { grid-template-columns: .6fr 1.4fr; }
+    .watchlist-form-actions { grid-column: 1 / -1; }
     .watchlist-form-actions { justify-content: flex-end; }
     .quote-select { grid-template-columns: 1fr 76px 1fr; padding-left: 18px; }
     .mini-chart { width: 76px; }
@@ -349,6 +366,7 @@ td.price-down { color: var(--danger); }
     .portfolio-actions > span { max-width: 160px; white-space: normal; line-height: 1.4; }
     .watchlist-header-actions .market-tag { display: none; }
     .watchlist-form { grid-template-columns: 1fr; }
+    .watchlist-form-actions { grid-column: auto; }
     .watchlist-form-actions { justify-content: stretch; }
     .watchlist-form-actions button { flex: 1; }
     .quote-select { grid-template-columns: 1fr 1fr; }

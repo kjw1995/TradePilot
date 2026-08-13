@@ -105,7 +105,18 @@ curl.exe -X PATCH "http://localhost:8080/api/v1/accounts/local-account/watchlist
 curl.exe -X DELETE "http://localhost:8080/api/v1/accounts/local-account/watchlist/items/035420?market=KRX"
 ```
 
-로컬 기본 관심종목은 Flyway `V3__create_watchlist.sql`에서 생성합니다. 현재 로컬 시뮬레이터가 KRX 두 종목만 생성하므로 화면 입력도 KRX로 제한했으며, 실제 증권사 종목 검색 API가 연결되면 해외 시장 선택과 자동완성 검색을 확장할 수 있습니다.
+로컬 기본 관심종목은 Flyway `V3__create_watchlist.sql`에서 생성합니다. 현재 로컬 시뮬레이터가 KRX 두 종목만 생성하므로 화면 입력도 KRX로 제한했으며, 실제 증권사 해외 종목 마스터가 연결되면 시장 선택 범위를 확장할 수 있습니다.
+
+### 종목 검색
+
+관심종목 추가 화면은 MySQL의 종목 마스터를 종목명 또는 코드로 검색해 선택하는 자동완성을 제공합니다. 검색 결과는 코드 완전 일치, 종목명 완전 일치, 접두사 일치 순으로 우선 표시하며 이미 관심종목에 등록된 항목은 다시 선택할 수 없습니다.
+
+```powershell
+curl.exe "http://localhost:8080/api/v1/instruments/search?market=KRX&query=삼성&limit=8"
+curl.exe "http://localhost:8080/api/v1/instruments/search?market=KRX&query=005930&limit=8"
+```
+
+로컬 종목 마스터와 대표 KRX 종목은 Flyway `V4__create_security_instruments.sql`에서 생성합니다. 운영 환경에서는 한국투자증권 종목정보 파일을 주기적으로 내려받아 `security_instruments`에 upsert하는 동기화 어댑터를 추가할 수 있습니다. 검색 API와 관심종목 UI는 동기화 방식이 바뀌어도 그대로 유지됩니다.
 
 ## 데이터 흐름
 

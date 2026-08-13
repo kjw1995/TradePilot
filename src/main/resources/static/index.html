@@ -187,17 +187,20 @@
                             <option value="KRX">KRX</option>
                         </select>
                     </label>
-                    <label>
-                        <span>종목 코드</span>
-                        <input id="watchlist-symbol" name="symbol" maxlength="20" placeholder="예: 035420" autocomplete="off" required>
-                    </label>
-                    <label>
-                        <span>종목명</span>
-                        <input id="watchlist-name" name="name" maxlength="100" placeholder="예: NAVER" autocomplete="off" required>
-                    </label>
+                    <div class="instrument-search-field">
+                        <label for="instrument-search">종목 검색</label>
+                        <span class="instrument-search-input">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+                            <input id="instrument-search" type="search" maxlength="50" placeholder="종목명 또는 코드 입력" autocomplete="off"
+                                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="instrument-results">
+                        </span>
+                        <span class="instrument-results" id="instrument-results" role="listbox" hidden></span>
+                    </div>
+                    <input id="watchlist-symbol" name="symbol" type="hidden">
+                    <input id="watchlist-name" name="name" type="hidden">
                     <div class="watchlist-form-actions">
                         <button class="watchlist-cancel" id="watchlist-cancel" type="button">취소</button>
-                        <button class="watchlist-submit" type="submit">추가</button>
+                        <button class="watchlist-submit" id="watchlist-submit" type="submit" disabled>추가</button>
                     </div>
                     <p class="watchlist-message" id="watchlist-message" role="status" aria-live="polite"></p>
                 </form>
