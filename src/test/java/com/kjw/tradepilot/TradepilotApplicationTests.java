@@ -35,6 +35,8 @@ class TradepilotApplicationTests {
                     assertThat(body).contains("data-testid=\"portfolio-comparison\"");
                     assertThat(body).contains("id=\"watchlist-form\"");
                     assertThat(body).contains("id=\"quote-list\"");
+                    assertThat(body).contains("id=\"instrument-search\"");
+                    assertThat(body).contains("id=\"instrument-results\"");
                 });
     }
 

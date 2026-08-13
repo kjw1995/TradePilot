@@ -17,7 +17,13 @@
         portfolio: null,
         portfolioLoading: false,
         watchlistLoading: false,
-        watchlistMutating: false
+        watchlistMutating: false,
+        instrumentResults: [],
+        instrumentSearchLoading: false,
+        instrumentSearchActiveIndex: -1,
+        instrumentSearchTimer: null,
+        instrumentSearchController: null,
+        selectedInstrument: null
     };
 
     const numberFormat = new Intl.NumberFormat('ko-KR');
@@ -335,8 +341,165 @@
         }
     }
 
+    function updateInstrumentSubmitState() {
+        byId('watchlist-submit').disabled = state.watchlistMutating || !state.selectedInstrument;
+    }
+
+    function closeInstrumentResults() {
+        const input = byId('instrument-search');
+        const results = byId('instrument-results');
+        results.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
+        state.instrumentSearchActiveIndex = -1;
+    }
+
+    function resetInstrumentSearch(clearInput = true) {
+        clearTimeout(state.instrumentSearchTimer);
+        state.instrumentSearchController?.abort();
+        state.instrumentSearchController = null;
+        state.instrumentResults = [];
+        state.instrumentSearchLoading = false;
+        state.selectedInstrument = null;
+        byId('watchlist-symbol').value = '';
+        byId('watchlist-name').value = '';
+        byId('watchlist-market').value = 'KRX';
+        byId('instrument-search').closest('.instrument-search-field').classList.remove('has-selection');
+        if (clearInput) byId('instrument-search').value = '';
+        closeInstrumentResults();
+        updateInstrumentSubmitState();
+    }
+
+    function isAlreadyWatching(instrument) {
+        return state.watchlist.some(item =>
+            item.market === instrument.market && item.symbol === instrument.symbol);
+    }
+
+    function renderInstrumentResults() {
+        const container = byId('instrument-results');
+        const input = byId('instrument-search');
+        container.replaceChildren();
+
+        if (state.instrumentSearchLoading) {
+            const loading = document.createElement('span');
+            loading.className = 'instrument-result-empty';
+            loading.textContent = '종목을 검색하고 있습니다.';
+            container.appendChild(loading);
+        } else if (!state.instrumentResults.length) {
+            const empty = document.createElement('span');
+            empty.className = 'instrument-result-empty';
+            empty.textContent = '일치하는 종목이 없습니다.';
+            container.appendChild(empty);
+        } else {
+            state.instrumentResults.forEach((instrument, index) => {
+                const button = document.createElement('button');
+                const alreadyWatching = isAlreadyWatching(instrument);
+                button.className = `instrument-result${index === state.instrumentSearchActiveIndex ? ' is-active' : ''}`;
+                button.type = 'button';
+                button.id = `instrument-result-${index}`;
+                button.dataset.instrumentIndex = String(index);
+                button.setAttribute('role', 'option');
+                button.setAttribute('aria-selected', String(index === state.instrumentSearchActiveIndex));
+                button.disabled = alreadyWatching;
+
+                const name = document.createElement('span');
+                name.className = 'instrument-result__name';
+                const title = document.createElement('b');
+                title.textContent = instrument.name;
+                const symbol = document.createElement('small');
+                symbol.textContent = instrument.symbol;
+                name.append(title, symbol);
+
+                const meta = document.createElement('span');
+                meta.className = 'instrument-result__meta';
+                meta.textContent = alreadyWatching ? '추가됨' : `${instrument.exchange} · ${instrument.currency}`;
+                button.append(name, meta);
+                container.appendChild(button);
+            });
+        }
+
+        container.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        if (state.instrumentSearchActiveIndex >= 0) {
+            input.setAttribute('aria-activedescendant', `instrument-result-${state.instrumentSearchActiveIndex}`);
+        } else {
+            input.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    function selectInstrument(instrument) {
+        if (!instrument || isAlreadyWatching(instrument)) return;
+        state.selectedInstrument = instrument;
+        byId('watchlist-market').value = instrument.market;
+        byId('watchlist-symbol').value = instrument.symbol;
+        byId('watchlist-name').value = instrument.name;
+        byId('instrument-search').value = `${instrument.name} · ${instrument.symbol}`;
+        byId('instrument-search').closest('.instrument-search-field').classList.add('has-selection');
+        closeInstrumentResults();
+        setWatchlistMessage(`${instrument.name}(${instrument.symbol})을 선택했습니다.`);
+        updateInstrumentSubmitState();
+    }
+
+    async function searchInstruments(query) {
+        const normalizedQuery = query.trim();
+        if (!normalizedQuery) {
+            state.instrumentResults = [];
+            closeInstrumentResults();
+            return;
+        }
+
+        state.instrumentSearchController?.abort();
+        const controller = new AbortController();
+        state.instrumentSearchController = controller;
+        state.instrumentSearchLoading = true;
+        state.instrumentSearchActiveIndex = -1;
+        renderInstrumentResults();
+        try {
+            const market = byId('watchlist-market').value;
+            const response = await fetch(
+                `/api/v1/instruments/search?market=${encodeURIComponent(market)}&query=${encodeURIComponent(normalizedQuery)}&limit=8`,
+                { headers: { Accept: 'application/json' }, signal: controller.signal }
+            );
+            if (!response.ok) throw new Error(await readApiError(response, `종목 검색 실패 (${response.status})`));
+            state.instrumentResults = await response.json();
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Unable to search instruments', error);
+            state.instrumentResults = [];
+            setWatchlistMessage(error.message, true);
+        } finally {
+            if (state.instrumentSearchController === controller) {
+                state.instrumentSearchLoading = false;
+                state.instrumentSearchController = null;
+                renderInstrumentResults();
+            }
+        }
+    }
+
+    function scheduleInstrumentSearch(query) {
+        clearTimeout(state.instrumentSearchTimer);
+        state.instrumentSearchTimer = setTimeout(() => searchInstruments(query), 250);
+    }
+
+    function moveInstrumentResultSelection(direction) {
+        if (!state.instrumentResults.length) return;
+        let nextIndex = state.instrumentSearchActiveIndex;
+        for (let attempts = 0; attempts < state.instrumentResults.length; attempts += 1) {
+            nextIndex = (nextIndex + direction + state.instrumentResults.length) % state.instrumentResults.length;
+            if (!isAlreadyWatching(state.instrumentResults[nextIndex])) {
+                state.instrumentSearchActiveIndex = nextIndex;
+                renderInstrumentResults();
+                return;
+            }
+        }
+    }
+
     async function addWatchlistItem(form) {
         if (state.watchlistMutating) return;
+        if (!state.selectedInstrument) {
+            setWatchlistMessage('검색 결과에서 추가할 종목을 선택해 주세요.', true);
+            return;
+        }
         const formData = new FormData(form);
         state.watchlistMutating = true;
         setWatchlistMessage('종목을 추가하고 있습니다.');
@@ -352,7 +515,7 @@
                 })
             });
             if (!response.ok) throw new Error(await readApiError(response, `종목 추가 실패 (${response.status})`));
-            form.reset();
+            resetInstrumentSearch();
             await fetchWatchlist();
             await fetchLatestQuotes();
             connectStream();
@@ -363,6 +526,7 @@
         } finally {
             state.watchlistMutating = false;
             form.querySelectorAll('button, input, select').forEach(control => control.disabled = false);
+            updateInstrumentSubmitState();
             renderWatchlist();
         }
     }
@@ -425,7 +589,10 @@
         byId('watchlist-add-toggle').setAttribute('aria-expanded', String(open));
         if (open) {
             setWatchlistMessage('');
-            byId('watchlist-symbol').focus();
+            byId('instrument-search').focus();
+        } else {
+            form.reset();
+            resetInstrumentSearch();
         }
     }
 
@@ -720,6 +887,44 @@
             setWatchlistFormOpen(byId('watchlist-form').hidden);
         });
         byId('watchlist-cancel').addEventListener('click', () => setWatchlistFormOpen(false));
+        byId('instrument-results').addEventListener('click', event => {
+            const result = event.target.closest('[data-instrument-index]');
+            if (!result) return;
+            selectInstrument(state.instrumentResults[Number(result.dataset.instrumentIndex)]);
+        });
+
+        const instrumentSearch = byId('instrument-search');
+        instrumentSearch.addEventListener('input', event => {
+            state.selectedInstrument = null;
+            byId('watchlist-symbol').value = '';
+            byId('watchlist-name').value = '';
+            instrumentSearch.closest('.instrument-search-field').classList.remove('has-selection');
+            updateInstrumentSubmitState();
+            setWatchlistMessage('검색 결과에서 종목을 선택해 주세요.');
+            scheduleInstrumentSearch(event.currentTarget.value);
+        });
+        instrumentSearch.addEventListener('keydown', event => {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveInstrumentResultSelection(1);
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveInstrumentResultSelection(-1);
+            }
+            if (event.key === 'Enter' && state.instrumentSearchActiveIndex >= 0) {
+                event.preventDefault();
+                selectInstrument(state.instrumentResults[state.instrumentSearchActiveIndex]);
+            }
+            if (event.key === 'Escape') closeInstrumentResults();
+        });
+        byId('watchlist-market').addEventListener('change', () => {
+            resetInstrumentSearch(false);
+            scheduleInstrumentSearch(instrumentSearch.value);
+        });
+        document.addEventListener('click', event => {
+            if (!byId('watchlist-form').contains(event.target)) closeInstrumentResults();
+        });
         byId('watchlist-form').addEventListener('submit', event => {
             event.preventDefault();
             addWatchlistItem(event.currentTarget);
