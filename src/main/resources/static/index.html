@@ -4,291 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f6f9f7">
-    <meta name="description" content="TradePilot 실시간 주식 시세 모니터링 대시보드">
-    <title>TradePilot · Live Market</title>
+    <meta name="description" content="TradePilot 실시간 주식 대시보드">
+    <title>TradePilot · 대시보드</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
 </head>
-<body>
+<body data-page="dashboard">
 <div class="app-shell">
     <aside class="sidebar" aria-label="주 메뉴">
-        <a class="brand" href="#overview" aria-label="TradePilot 홈">
-            <span class="brand-mark" aria-hidden="true">
-                <svg viewBox="0 0 32 32" role="img">
-                    <path d="M7 22.5 13 16l4 3.5L25 9"/>
-                    <path d="M20 9h5v5"/>
-                </svg>
-            </span>
+        <a class="brand" href="/" aria-label="TradePilot 홈">
+            <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 22.5 13 16l4 3.5L25 9"/><path d="M20 9h5v5"/></svg></span>
             <span>TRADEPILOT</span>
         </a>
-
         <nav class="nav-list">
-            <a class="nav-item active" href="#overview" aria-current="page">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>
-                개요
-            </a>
-            <a class="nav-item" href="#watchlist">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
-                관심 종목
-            </a>
-            <a class="nav-item" href="#portfolio">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16v12H4zM7 7.5V5h10v2.5M4 12h16M15.5 15.5h2"/></svg>
-                내 포트폴리오
-            </a>
-            <a class="nav-item" href="#activity">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
-                실시간 체결
-            </a>
+            <a class="nav-item active" href="/" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>대시보드</a>
+            <a class="nav-item" href="/watchlist.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>관심종목</a>
+            <a class="nav-item" href="/portfolio.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16v12H4zM7 7.5V5h10v2.5M4 12h16M15.5 15.5h2"/></svg>내 포트폴리오</a>
+            <a class="nav-item" href="/activity.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>실시간 체결</a>
         </nav>
-
         <div class="sidebar-footer">
-            <div class="system-card">
-                <div class="system-card__top">
-                    <span>데이터 파이프라인</span>
-                    <span class="status-light" aria-hidden="true"></span>
-                </div>
-                <strong>MySQL + Redis</strong>
-                <small>원장 저장 및 최신가 캐시</small>
-            </div>
+            <div class="system-card"><div class="system-card__top"><span>데이터 파이프라인</span><span class="status-light" aria-hidden="true"></span></div><strong>MySQL + Redis</strong><small>영속 저장 및 최신가 캐시</small></div>
             <span class="version">TradePilot v0.1</span>
         </div>
     </aside>
 
-    <main class="main-content" id="overview">
+    <main class="main-content">
         <header class="topbar">
-            <button class="menu-button" type="button" aria-label="메뉴 열기" aria-controls="mobile-menu" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-            </button>
-            <div class="topbar__title">
-                <span>MARKET OPERATIONS</span>
-                <strong>실시간 시장 모니터</strong>
-            </div>
-            <div class="topbar__right">
-                <span class="market-clock" id="market-clock">--:--:-- KST</span>
-                <div class="connection-badge" id="connection-badge" data-status="connecting" role="status" aria-live="polite">
-                    <span class="connection-badge__dot" aria-hidden="true"></span>
-                    <span id="connection-label">연결 중</span>
-                </div>
-            </div>
+            <button class="menu-button" type="button" aria-label="메뉴 열기" aria-controls="mobile-menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+            <div class="topbar__title"><span>MARKET OPERATIONS</span><strong>대시보드</strong></div>
+            <div class="topbar__right"><span class="market-clock" id="market-clock">--:--:-- KST</span><div class="connection-badge" id="connection-badge" data-status="connecting" role="status" aria-live="polite"><span class="connection-badge__dot" aria-hidden="true"></span><span id="connection-label">연결 중</span></div></div>
         </header>
 
         <section class="hero-section" aria-labelledby="dashboard-title">
-            <div>
-                <span class="eyebrow">LIVE DATA DESK</span>
-                <h1 id="dashboard-title">시장의 흐름을<br><em>한 화면에서.</em></h1>
-            </div>
-            <p>KRX 실시간 체결 데이터를 수신하고, 저장과 캐시 상태를 즉시 확인합니다. 화면의 모든 가격은 서버 SSE 이벤트로 갱신됩니다.</p>
+            <div><span class="eyebrow">LIVE DATA DESK</span><h1 id="dashboard-title">시장의 흐름을<br><em>한눈에 확인하세요.</em></h1></div>
+            <p>관심종목, 내 포트폴리오, 실시간 체결 정보를 목적별 페이지에서 더 깊이 확인할 수 있습니다. 대시보드는 현재 시장과 데이터 연결 상태를 빠르게 요약합니다.</p>
         </section>
 
         <section class="metric-grid" aria-label="실시간 요약">
-            <article class="metric-card metric-card--primary">
-                <div class="metric-card__label">
-                    <span>MARKET</span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 9 13l3 3 8-9M15 7h5v5"/></svg>
-                </div>
-                <strong id="market-session">확인 중</strong>
-                <small id="market-session-detail">한국거래소 운영 시간 기준</small>
-            </article>
-            <article class="metric-card">
-                <div class="metric-card__label"><span>WATCHING</span><span class="metric-index">01</span></div>
-                <strong><span id="watch-count">2</span><small> 종목</small></strong>
-                <p>실시간 구독 종목</p>
-            </article>
-            <article class="metric-card">
-                <div class="metric-card__label"><span>SESSION TICKS</span><span class="metric-index">02</span></div>
-                <strong id="event-count">0</strong>
-                <p>화면 수신 이벤트</p>
-            </article>
-            <article class="metric-card">
-                <div class="metric-card__label"><span>FEED LATENCY</span><span class="metric-index">03</span></div>
-                <strong><span id="feed-latency">--</span><small> ms</small></strong>
-                <p id="last-update">아직 수신된 데이터 없음</p>
-            </article>
+            <article class="metric-card metric-card--primary"><div class="metric-card__label"><span>MARKET</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 9 13l3 3 8-9M15 7h5v5"/></svg></div><strong id="market-session">확인 중</strong><small id="market-session-detail">한국거래소 운영 시간 기준</small></article>
+            <article class="metric-card"><div class="metric-card__label"><span>WATCHING</span><span class="metric-index">01</span></div><strong><span id="watch-count">0</span><small> 종목</small></strong><p>실시간 구독 종목</p></article>
+            <article class="metric-card"><div class="metric-card__label"><span>SESSION TICKS</span><span class="metric-index">02</span></div><strong id="event-count">0</strong><p>화면 수신 이벤트</p></article>
+            <article class="metric-card"><div class="metric-card__label"><span>FEED LATENCY</span><span class="metric-index">03</span></div><strong><span id="feed-latency">--</span><small> ms</small></strong><p id="last-update">아직 수신된 데이터 없음</p></article>
         </section>
 
-        <section class="panel portfolio-panel" id="portfolio" data-testid="portfolio-comparison" aria-labelledby="portfolio-title">
-            <header class="portfolio-header">
-                <div class="account-heading">
-                    <span class="account-mark" aria-hidden="true">MY</span>
-                    <div>
-                        <span class="panel-kicker">MY PORTFOLIO</span>
-                        <h2 id="portfolio-title"><span id="account-name">내 투자계좌</span> <small id="account-meta">불러오는 중</small></h2>
-                    </div>
-                </div>
-                <div class="portfolio-actions">
-                    <span id="portfolio-synced-at">계좌 정보를 불러오고 있습니다.</span>
-                    <button class="refresh-button" id="portfolio-refresh" type="button">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9A7 7 0 0 1 18 6l2 5M17.9 15A7 7 0 0 1 6 18l-2-5"/></svg>
-                        새로고침
-                    </button>
-                </div>
-            </header>
-
-            <div class="portfolio-summary" aria-label="내 계좌 평가 요약">
-                <article class="portfolio-stat portfolio-stat--hero">
-                    <span>총 자산</span>
-                    <strong id="portfolio-total-assets">--</strong>
-                    <small>예수금 + 보유 종목 평가액</small>
-                </article>
-                <article class="portfolio-stat">
-                    <span>투자 원금</span>
-                    <strong id="portfolio-invested">--</strong>
-                    <small id="portfolio-evaluation">평가액 --</small>
-                </article>
-                <article class="portfolio-stat">
-                    <span>평가 손익</span>
-                    <strong id="portfolio-profit-loss">--</strong>
-                    <small id="portfolio-return-rate">수익률 --</small>
-                </article>
-                <article class="portfolio-stat">
-                    <span>예수금</span>
-                    <strong id="portfolio-cash">--</strong>
-                    <small>주문 가능 현금</small>
-                </article>
-            </div>
-
-            <div class="table-wrap portfolio-table-wrap">
-                <table class="portfolio-table">
-                    <thead>
-                    <tr><th>보유 종목</th><th>수량</th><th>평균 매수가</th><th>현재가</th><th>투자 원금</th><th>평가 금액</th><th>평가 손익</th></tr>
-                    </thead>
-                    <tbody id="portfolio-body">
-                    <tr class="empty-row"><td colspan="7">내 계좌 정보를 불러오고 있습니다.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <footer class="portfolio-footer">
-                <span id="portfolio-quote-status"><i class="legend-dot"></i>시세 연결 대기 중</span>
-                <span>평균 매수가와 실시간 현재가를 비교합니다.</span>
-            </footer>
+        <section class="feature-grid" aria-label="주요 기능">
+            <a class="feature-card feature-card--watchlist" href="/watchlist.html">
+                <span class="feature-card__index">01</span><span class="panel-kicker">WATCHLIST</span><h2>관심종목 관리</h2><p>종목을 검색해 추가하고 순서를 정리한 뒤 실시간 가격 차트를 확인합니다.</p><strong>관심종목 페이지로 이동 <span aria-hidden="true">→</span></strong>
+            </a>
+            <a class="feature-card feature-card--portfolio" href="/portfolio.html">
+                <span class="feature-card__index">02</span><span class="panel-kicker">MY PORTFOLIO</span><h2>내 포트폴리오</h2><p>보유 종목의 평균 매수가와 현재가를 비교하고 계좌 수익률을 확인합니다.</p><strong>포트폴리오 페이지로 이동 <span aria-hidden="true">→</span></strong>
+            </a>
+            <a class="feature-card feature-card--activity" href="/activity.html">
+                <span class="feature-card__index">03</span><span class="panel-kicker">LIVE TAPE</span><h2>실시간 체결</h2><p>관심종목에서 발생한 최신 체결 흐름과 데이터 소스를 실시간으로 추적합니다.</p><strong>체결 페이지로 이동 <span aria-hidden="true">→</span></strong>
+            </a>
         </section>
 
-        <section class="market-workspace" id="watchlist">
-            <article class="panel watchlist-panel">
-                <header class="panel-header">
-                    <div>
-                        <span class="panel-kicker">WATCHLIST</span>
-                        <h2>관심 종목</h2>
-                    </div>
-                    <div class="watchlist-header-actions">
-                        <span class="market-tag">최대 30개</span>
-                        <button class="watchlist-add-toggle" id="watchlist-add-toggle" type="button" aria-expanded="false" aria-controls="watchlist-form">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                            종목 추가
-                        </button>
-                    </div>
-                </header>
-
-                <form class="watchlist-form" id="watchlist-form" hidden>
-                    <label>
-                        <span>시장</span>
-                        <select id="watchlist-market" name="market" required>
-                            <option value="KRX">KRX</option>
-                        </select>
-                    </label>
-                    <div class="instrument-search-field">
-                        <label for="instrument-search">종목 검색</label>
-                        <span class="instrument-search-input">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
-                            <input id="instrument-search" type="search" maxlength="50" placeholder="종목명 또는 코드 입력" autocomplete="off"
-                                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="instrument-results">
-                        </span>
-                        <span class="instrument-results" id="instrument-results" role="listbox" hidden></span>
-                    </div>
-                    <input id="watchlist-symbol" name="symbol" type="hidden">
-                    <input id="watchlist-name" name="name" type="hidden">
-                    <div class="watchlist-form-actions">
-                        <button class="watchlist-cancel" id="watchlist-cancel" type="button">취소</button>
-                        <button class="watchlist-submit" id="watchlist-submit" type="submit" disabled>추가</button>
-                    </div>
-                    <p class="watchlist-message" id="watchlist-message" role="status" aria-live="polite"></p>
-                </form>
-
-                <div class="quote-list" id="quote-list" role="list" aria-label="관심 종목 시세" aria-busy="true">
-                    <div class="watchlist-empty">관심종목을 불러오고 있습니다.</div>
-                </div>
-
-                <footer class="panel-footer">
-                    <span><i class="legend-dot legend-dot--up"></i>상승</span>
-                    <span><i class="legend-dot legend-dot--down"></i>하락</span>
-                    <span>클릭하여 차트 전환</span>
-                </footer>
-            </article>
-
-            <article class="panel chart-panel" aria-labelledby="chart-title">
-                <header class="chart-header">
-                    <div>
-                        <span class="panel-kicker" id="selected-market">KRX · 005930</span>
-                        <h2 id="chart-title">삼성전자</h2>
-                    </div>
-                    <div class="chart-price">
-                        <strong id="selected-price">--</strong>
-                        <span id="selected-change">실시간 시세 대기 중</span>
-                    </div>
-                </header>
-
-                <div class="chart-canvas" data-testid="price-chart">
-                    <div class="chart-grid" aria-hidden="true"></div>
-                    <svg viewBox="0 0 800 300" preserveAspectRatio="none" role="img" aria-label="선택 종목 실시간 가격 차트">
-                        <defs>
-                            <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#168449" stop-opacity="0.22"/>
-                                <stop offset="100%" stop-color="#168449" stop-opacity="0"/>
-                            </linearGradient>
-                        </defs>
-                        <path id="price-area" class="price-area" d="M0 250 L800 250 L800 300 L0 300 Z"/>
-                        <polyline id="price-line" class="price-line" points="0,250 800,250"/>
-                    </svg>
-                    <div class="empty-chart" id="empty-chart">
-                        <span class="loader-line"></span>
-                        <p>첫 번째 실시간 틱을 기다리고 있습니다</p>
-                    </div>
-                </div>
-
-                <div class="chart-meta">
-                    <div><span>세션 고가</span><strong id="session-high">--</strong></div>
-                    <div><span>세션 저가</span><strong id="session-low">--</strong></div>
-                    <div><span>최근 거래량</span><strong id="selected-volume">--</strong></div>
-                    <div><span>데이터 소스</span><strong id="selected-source">--</strong></div>
-                </div>
-            </article>
-        </section>
-
-        <section class="panel activity-panel" id="activity">
-            <header class="panel-header">
-                <div>
-                    <span class="panel-kicker">LIVE TAPE</span>
-                    <h2>최근 체결 흐름</h2>
-                </div>
-                <span class="streaming-label"><i></i>STREAMING</span>
-            </header>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                    <tr><th>시간</th><th>종목</th><th>시장</th><th>체결가</th><th>거래량</th><th>소스</th></tr>
-                    </thead>
-                    <tbody id="activity-body">
-                    <tr class="empty-row"><td colspan="6">실시간 체결 데이터를 기다리고 있습니다.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <footer class="page-footer">
-            <span>TRADEPILOT MARKET DATA CONSOLE</span>
-            <span>가격 정보는 투자 판단의 참고 자료이며 거래소 사정에 따라 지연될 수 있습니다.</span>
-        </footer>
+        <footer class="page-footer"><span>TRADEPILOT MARKET DATA CONSOLE</span><span>가격 정보는 투자 판단의 참고 자료이며 거래소 사정에 따라 지연될 수 있습니다.</span></footer>
     </main>
 </div>
 
-<div class="mobile-menu" id="mobile-menu" hidden>
-    <a href="#overview">개요</a>
-    <a href="#portfolio">내 포트폴리오</a>
-    <a href="#watchlist">관심 종목</a>
-    <a href="#activity">실시간 체결</a>
-</div>
-
+<div class="mobile-menu" id="mobile-menu" hidden><a class="active" href="/">대시보드</a><a href="/watchlist.html">관심종목</a><a href="/portfolio.html">내 포트폴리오</a><a href="/activity.html">실시간 체결</a></div>
 <noscript>실시간 시세 화면을 사용하려면 JavaScript를 활성화해 주세요.</noscript>
 </body>
 </html>

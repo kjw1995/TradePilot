@@ -72,13 +72,16 @@
     }
 
     function setConnection(status, label) {
-        byId('connection-badge').dataset.status = status;
-        byId('connection-label').textContent = label;
+        const badge = byId('connection-badge');
+        const connectionLabel = byId('connection-label');
+        if (badge) badge.dataset.status = status;
+        if (connectionLabel) connectionLabel.textContent = label;
     }
 
     function updateClockAndSession() {
         const now = new Date();
-        byId('market-clock').textContent = `${timeFormat.format(now)} KST`;
+        const clock = byId('market-clock');
+        if (clock) clock.textContent = `${timeFormat.format(now)} KST`;
 
         const parts = new Intl.DateTimeFormat('en-US', {
             timeZone: 'Asia/Seoul', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false
@@ -87,8 +90,10 @@
         const weekday = !['Sat', 'Sun'].includes(parts.weekday);
         const isOpen = weekday && minute >= 540 && minute <= 930;
 
-        byId('market-session').textContent = isOpen ? 'KRX 장중' : 'KRX 장 마감';
-        byId('market-session-detail').textContent = isOpen ? '정규 시장 · 09:00—15:30' : '다음 정규장 데이터를 준비합니다';
+        const session = byId('market-session');
+        const sessionDetail = byId('market-session-detail');
+        if (session) session.textContent = isOpen ? 'KRX 장중' : 'KRX 장 마감';
+        if (sessionDetail) sessionDetail.textContent = isOpen ? '정규 시장 · 09:00—15:30' : '다음 정규장 데이터를 준비합니다';
     }
 
     function normalizeHistory(history, width, height) {
@@ -113,6 +118,7 @@
     }
 
     function renderSelectedChart() {
+        if (!byId('chart-title')) return;
         const symbol = state.selectedSymbol;
         if (!symbol || !symbols[symbol]) {
             byId('selected-market').textContent = '관심 종목';
@@ -172,6 +178,7 @@
         const changeNode = changeElement(symbol);
         const quoteNode = quoteElement(symbol);
 
+        if (!priceNode || !changeNode || !quoteNode) return;
         priceNode.textContent = formatPrice(price);
         changeNode.textContent = changeText(change);
         changeNode.className = change.direction;
@@ -205,6 +212,7 @@
 
     function setWatchlistMessage(message, error = false) {
         const node = byId('watchlist-message');
+        if (!node) return;
         node.textContent = message;
         node.classList.toggle('is-error', error);
     }
@@ -276,9 +284,11 @@
 
     function renderWatchlist() {
         const list = byId('quote-list');
+        const count = byId('watch-count');
+        if (count) count.textContent = numberFormat.format(state.watchlist.length);
+        if (!list) return;
         list.replaceChildren();
         list.setAttribute('aria-busy', String(state.watchlistLoading));
-        byId('watch-count').textContent = numberFormat.format(state.watchlist.length);
 
         if (state.watchlistLoading) {
             const loading = document.createElement('div');
@@ -342,7 +352,8 @@
     }
 
     function updateInstrumentSubmitState() {
-        byId('watchlist-submit').disabled = state.watchlistMutating || !state.selectedInstrument;
+        const submit = byId('watchlist-submit');
+        if (submit) submit.disabled = state.watchlistMutating || !state.selectedInstrument;
     }
 
     function closeInstrumentResults() {
@@ -598,8 +609,10 @@
 
     function setPortfolioStatus(status, message) {
         const footer = document.querySelector('.portfolio-footer');
+        const quoteStatus = byId('portfolio-quote-status');
+        if (!footer || !quoteStatus) return;
         footer.dataset.status = status;
-        byId('portfolio-quote-status').lastChild.textContent = message;
+        quoteStatus.lastChild.textContent = message;
     }
 
     function recalculatePortfolioTotals() {
@@ -643,6 +656,7 @@
 
     function renderPortfolioPositions() {
         const body = byId('portfolio-body');
+        if (!body || !state.portfolio) return;
         body.replaceChildren();
 
         if (!state.portfolio.positions.length) {
@@ -679,7 +693,7 @@
     }
 
     function renderPortfolio() {
-        if (!state.portfolio) return;
+        if (!state.portfolio || !byId('portfolio-body')) return;
         const { account, totals } = state.portfolio;
         const profitNode = byId('portfolio-profit-loss');
         const returnNode = byId('portfolio-return-rate');
@@ -722,8 +736,10 @@
         if (state.portfolioLoading) return;
         state.portfolioLoading = true;
         const button = byId('portfolio-refresh');
-        button.disabled = true;
-        button.classList.add('is-loading');
+        if (button) {
+            button.disabled = true;
+            button.classList.add('is-loading');
+        }
 
         try {
             const response = await fetch(`/api/v1/portfolio/accounts/${portfolioAccountId}/summary`, {
@@ -753,13 +769,16 @@
             byId('portfolio-synced-at').textContent = '계좌 동기화 실패';
         } finally {
             state.portfolioLoading = false;
-            button.disabled = false;
-            button.classList.remove('is-loading');
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('is-loading');
+            }
         }
     }
 
     function appendActivity(tick, direction) {
         const body = byId('activity-body');
+        if (!body) return;
         body.querySelector('.empty-row')?.remove();
         const row = document.createElement('tr');
         const cells = [
@@ -802,9 +821,12 @@
         if (!historical) {
             state.eventCount += 1;
             const latency = Math.max(0, Date.now() - new Date(tick.receivedAt).getTime());
-            byId('event-count').textContent = numberFormat.format(state.eventCount);
-            byId('feed-latency').textContent = numberFormat.format(latency);
-            byId('last-update').textContent = `${timeFormat.format(new Date())} 마지막 갱신`;
+            const eventCount = byId('event-count');
+            const feedLatency = byId('feed-latency');
+            const lastUpdate = byId('last-update');
+            if (eventCount) eventCount.textContent = numberFormat.format(state.eventCount);
+            if (feedLatency) feedLatency.textContent = numberFormat.format(latency);
+            if (lastUpdate) lastUpdate.textContent = `${timeFormat.format(new Date())} 마지막 갱신`;
             const direction = previousPrice == null ? 'flat' : price > previousPrice ? 'up' : price < previousPrice ? 'down' : 'flat';
             appendActivity(tick, direction);
         }
@@ -867,93 +889,102 @@
     }
 
     function bindInteractions() {
-        byId('quote-list').addEventListener('click', event => {
-            const action = event.target.closest('[data-action]');
-            const row = event.target.closest('.quote-item');
-            if (!action || !row) return;
-            const item = state.watchlist.find(candidate =>
-                candidate.symbol === row.dataset.symbol && candidate.market === row.dataset.market);
-            if (!item) return;
-            if (action.dataset.action === 'select') selectSymbol(item.symbol);
-            if (action.dataset.action === 'up') moveWatchlistItem(item, -1);
-            if (action.dataset.action === 'down') moveWatchlistItem(item, 1);
-            if (action.dataset.action === 'delete'
-                && window.confirm(`${item.name}(${item.symbol})을 관심종목에서 삭제할까요?`)) {
-                removeWatchlistItem(item);
-            }
-        });
-
-        byId('watchlist-add-toggle').addEventListener('click', () => {
-            setWatchlistFormOpen(byId('watchlist-form').hidden);
-        });
-        byId('watchlist-cancel').addEventListener('click', () => setWatchlistFormOpen(false));
-        byId('instrument-results').addEventListener('click', event => {
-            const result = event.target.closest('[data-instrument-index]');
-            if (!result) return;
-            selectInstrument(state.instrumentResults[Number(result.dataset.instrumentIndex)]);
-        });
-
         const instrumentSearch = byId('instrument-search');
-        instrumentSearch.addEventListener('input', event => {
-            state.selectedInstrument = null;
-            byId('watchlist-symbol').value = '';
-            byId('watchlist-name').value = '';
-            instrumentSearch.closest('.instrument-search-field').classList.remove('has-selection');
-            updateInstrumentSubmitState();
-            setWatchlistMessage('검색 결과에서 종목을 선택해 주세요.');
-            scheduleInstrumentSearch(event.currentTarget.value);
-        });
-        instrumentSearch.addEventListener('keydown', event => {
-            if (event.key === 'ArrowDown') {
+        if (instrumentSearch) {
+            byId('quote-list').addEventListener('click', event => {
+                const action = event.target.closest('[data-action]');
+                const row = event.target.closest('.quote-item');
+                if (!action || !row) return;
+                const item = state.watchlist.find(candidate =>
+                    candidate.symbol === row.dataset.symbol && candidate.market === row.dataset.market);
+                if (!item) return;
+                if (action.dataset.action === 'select') selectSymbol(item.symbol);
+                if (action.dataset.action === 'up') moveWatchlistItem(item, -1);
+                if (action.dataset.action === 'down') moveWatchlistItem(item, 1);
+                if (action.dataset.action === 'delete'
+                    && window.confirm(`${item.name}(${item.symbol})을 관심종목에서 삭제할까요?`)) {
+                    removeWatchlistItem(item);
+                }
+            });
+            byId('watchlist-add-toggle').addEventListener('click', () => {
+                setWatchlistFormOpen(byId('watchlist-form').hidden);
+            });
+            byId('watchlist-cancel').addEventListener('click', () => setWatchlistFormOpen(false));
+            byId('instrument-results').addEventListener('click', event => {
+                const result = event.target.closest('[data-instrument-index]');
+                if (!result) return;
+                selectInstrument(state.instrumentResults[Number(result.dataset.instrumentIndex)]);
+            });
+            instrumentSearch.addEventListener('input', event => {
+                state.selectedInstrument = null;
+                byId('watchlist-symbol').value = '';
+                byId('watchlist-name').value = '';
+                instrumentSearch.closest('.instrument-search-field').classList.remove('has-selection');
+                updateInstrumentSubmitState();
+                setWatchlistMessage('검색 결과에서 종목을 선택해 주세요.');
+                scheduleInstrumentSearch(event.currentTarget.value);
+            });
+            instrumentSearch.addEventListener('keydown', event => {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    moveInstrumentResultSelection(1);
+                }
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    moveInstrumentResultSelection(-1);
+                }
+                if (event.key === 'Enter' && state.instrumentSearchActiveIndex >= 0) {
+                    event.preventDefault();
+                    selectInstrument(state.instrumentResults[state.instrumentSearchActiveIndex]);
+                }
+                if (event.key === 'Escape') closeInstrumentResults();
+            });
+            byId('watchlist-market').addEventListener('change', () => {
+                resetInstrumentSearch(false);
+                scheduleInstrumentSearch(instrumentSearch.value);
+            });
+            document.addEventListener('click', event => {
+                if (!byId('watchlist-form').contains(event.target)) closeInstrumentResults();
+            });
+            byId('watchlist-form').addEventListener('submit', event => {
                 event.preventDefault();
-                moveInstrumentResultSelection(1);
-            }
-            if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                moveInstrumentResultSelection(-1);
-            }
-            if (event.key === 'Enter' && state.instrumentSearchActiveIndex >= 0) {
-                event.preventDefault();
-                selectInstrument(state.instrumentResults[state.instrumentSearchActiveIndex]);
-            }
-            if (event.key === 'Escape') closeInstrumentResults();
-        });
-        byId('watchlist-market').addEventListener('change', () => {
-            resetInstrumentSearch(false);
-            scheduleInstrumentSearch(instrumentSearch.value);
-        });
-        document.addEventListener('click', event => {
-            if (!byId('watchlist-form').contains(event.target)) closeInstrumentResults();
-        });
-        byId('watchlist-form').addEventListener('submit', event => {
-            event.preventDefault();
-            addWatchlistItem(event.currentTarget);
-        });
+                addWatchlistItem(event.currentTarget);
+            });
+        }
 
         const menuButton = document.querySelector('.menu-button');
         const mobileMenu = byId('mobile-menu');
-        menuButton.addEventListener('click', () => {
-            const expanded = menuButton.getAttribute('aria-expanded') === 'true';
-            menuButton.setAttribute('aria-expanded', String(!expanded));
-            mobileMenu.hidden = expanded;
-        });
-        mobileMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-            mobileMenu.hidden = true;
-            menuButton.setAttribute('aria-expanded', 'false');
-        }));
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                const expanded = menuButton.getAttribute('aria-expanded') === 'true';
+                menuButton.setAttribute('aria-expanded', String(!expanded));
+                mobileMenu.hidden = expanded;
+            });
+            mobileMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+                mobileMenu.hidden = true;
+                menuButton.setAttribute('aria-expanded', 'false');
+            }));
+        }
 
-        byId('portfolio-refresh').addEventListener('click', async () => {
-            await fetchPortfolio();
-            await fetchLatestQuotes();
-            connectStream();
-        });
+        const portfolioRefresh = byId('portfolio-refresh');
+        if (portfolioRefresh) {
+            portfolioRefresh.addEventListener('click', async () => {
+                await fetchPortfolio();
+                await fetchLatestQuotes();
+                connectStream();
+            });
+        }
     }
 
     async function initialize() {
         bindInteractions();
         updateClockAndSession();
         setInterval(updateClockAndSession, 1000);
-        await Promise.all([fetchPortfolio(), fetchWatchlist()]);
+        const page = document.body.dataset.page ?? 'dashboard';
+        const initialRequests = [];
+        if (page === 'portfolio') initialRequests.push(fetchPortfolio());
+        if (page === 'dashboard' || page === 'watchlist' || page === 'activity') initialRequests.push(fetchWatchlist());
+        await Promise.all(initialRequests);
         syncSymbolRegistry();
         await fetchLatestQuotes();
         connectStream();

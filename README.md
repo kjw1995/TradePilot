@@ -50,7 +50,12 @@ docker image ls "tradepilot-*"
 
 시뮬레이터는 삼성전자(`005930`)와 SK하이닉스(`000660`) 틱을 1초마다 생성합니다.
 
-브라우저에서 `http://localhost:8080`을 열면 Spring Boot가 직접 제공하는 실시간 대시보드를 볼 수 있습니다. 별도 프론트엔드 개발 서버나 CORS 설정은 필요하지 않습니다.
+브라우저에서 `http://localhost:8080`을 열면 Spring Boot가 직접 제공하는 실시간 대시보드를 볼 수 있습니다. 별도 프론트엔드 개발 서버나 CORS 설정은 필요하지 않습니다. 주요 기능은 다음 페이지로 분리되어 있습니다.
+
+- 대시보드: `http://localhost:8080/`
+- 관심종목 관리: `http://localhost:8080/watchlist.html`
+- 내 포트폴리오: `http://localhost:8080/portfolio.html`
+- 실시간 체결: `http://localhost:8080/activity.html`
 
 ```powershell
 # 내장 실시간 대시보드
@@ -73,7 +78,7 @@ curl.exe -X POST "http://localhost:8080/api/v1/market-data/ticks" `
 
 ## 내 포트폴리오 비교
 
-대시보드의 `내 포트폴리오` 영역은 MySQL에 저장된 계좌·보유 종목과 Redis/MySQL의 최신 시세를 결합해 총자산, 평가금액, 평가손익과 수익률을 보여줍니다. 최초 화면 로드 시 스냅샷 API를 호출하고, 이후에는 기존 시장 데이터 SSE 이벤트로 보유 종목 평가를 실시간 갱신합니다.
+`내 포트폴리오` 페이지는 MySQL에 저장된 계좌·보유 종목과 Redis/MySQL의 최신 시세를 결합해 총자산, 평가금액, 평가손익과 수익률을 보여줍니다. 최초 화면 로드 시 스냅샷 API를 호출하고, 이후에는 기존 시장 데이터 SSE 이벤트로 보유 종목 평가를 실시간 갱신합니다.
 
 ```powershell
 curl.exe "http://localhost:8080/api/v1/portfolio/accounts/local-account/summary"
@@ -85,7 +90,7 @@ curl.exe "http://localhost:8080/api/v1/portfolio/accounts/local-account/summary"
 
 ## 관심종목 관리
 
-관심종목은 MySQL을 원장으로 사용하며 계정별 최대 30개까지 저장합니다. 대시보드에서 종목코드와 종목명을 입력해 추가하고, 위·아래 이동 버튼으로 표시 순서를 바꾸거나 삭제할 수 있습니다. 목록이 바뀌면 화면의 SSE 구독 대상도 자동으로 다시 연결됩니다.
+관심종목은 MySQL을 원장으로 사용하며 계정별 최대 30개까지 저장합니다. `관심종목` 페이지에서 종목코드와 종목명을 검색해 추가하고, 위·아래 이동 버튼으로 표시 순서를 바꾸거나 삭제할 수 있습니다. 목록이 바뀌면 화면의 SSE 구독 대상도 자동으로 다시 연결됩니다.
 
 ```powershell
 # 목록 조회
