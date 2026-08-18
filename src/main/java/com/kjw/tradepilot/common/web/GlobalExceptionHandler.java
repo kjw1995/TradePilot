@@ -1,6 +1,8 @@
 package com.kjw.tradepilot.common.web;
 
 import com.kjw.tradepilot.watchlist.application.WatchlistItemAlreadyExistsException;
+import com.kjw.tradepilot.order.application.OrderNotCancelableException;
+import com.kjw.tradepilot.order.application.OrderRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -12,6 +14,20 @@ import java.util.List;
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    @ExceptionHandler(OrderRejectedException.class)
+    ResponseEntity<ApiError> handleOrderRejected(OrderRejectedException exception) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
+                new ApiError("ORDER_REJECTED", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
+    @ExceptionHandler(OrderNotCancelableException.class)
+    ResponseEntity<ApiError> handleOrderNotCancelable(OrderNotCancelableException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ApiError("ORDER_NOT_CANCELABLE", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
     @ExceptionHandler(WatchlistItemAlreadyExistsException.class)
     ResponseEntity<ApiError> handleWatchlistConflict(WatchlistItemAlreadyExistsException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(

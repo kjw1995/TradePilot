@@ -6,6 +6,7 @@ import com.kjw.tradepilot.marketdata.domain.Market;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -16,6 +17,19 @@ class MySqlInstrumentRepositoryAdapter implements InstrumentRepositoryPort {
 
     MySqlInstrumentRepositoryAdapter(DatabaseClient databaseClient) {
         this.databaseClient = databaseClient;
+    }
+
+    @Override
+    public Mono<SecurityInstrument> find(Market market, String symbol) {
+        return databaseClient.sql("""
+                        SELECT market, symbol, name, exchange, currency, updated_at
+                        FROM security_instruments
+                        WHERE market = :market AND symbol = :symbol AND active = TRUE
+                        """)
+                .bind("market", market.name())
+                .bind("symbol", symbol)
+                .map((row, metadata) -> mapInstrument(row))
+                .one();
     }
 
     @Override
@@ -39,14 +53,18 @@ class MySqlInstrumentRepositoryAdapter implements InstrumentRepositoryPort {
                 .bind("market", market.name())
                 .bind("query", query)
                 .bind("limit", limit)
-                .map((row, metadata) -> new SecurityInstrument(
-                        Market.valueOf(row.get("market", String.class)),
-                        row.get("symbol", String.class),
-                        row.get("name", String.class),
-                        row.get("exchange", String.class),
-                        row.get("currency", String.class),
-                        row.get("updated_at", LocalDateTime.class).toInstant(ZoneOffset.UTC)
-                ))
+                .map((row, metadata) -> mapInstrument(row))
                 .all();
+    }
+
+    private SecurityInstrument mapInstrument(io.r2dbc.spi.Row row) {
+        return new SecurityInstrument(
+                Market.valueOf(row.get("market", String.class)),
+                row.get("symbol", String.class),
+                row.get("name", String.class),
+                row.get("exchange", String.class),
+                row.get("currency", String.class),
+                row.get("updated_at", LocalDateTime.class).toInstant(ZoneOffset.UTC)
+        );
     }
 }

@@ -986,8 +986,10 @@
         if (page === 'dashboard' || page === 'watchlist' || page === 'activity') initialRequests.push(fetchWatchlist());
         await Promise.all(initialRequests);
         syncSymbolRegistry();
-        await fetchLatestQuotes();
-        connectStream();
+        if (page !== 'orders') {
+            await fetchLatestQuotes();
+            connectStream();
+        }
     }
 
     window.addEventListener('beforeunload', () => {
