@@ -34,6 +34,7 @@ class TradepilotApplicationTests {
                     assertThat(body).contains("data-page=\"dashboard\"");
                     assertThat(body).contains("href=\"/watchlist.html\"");
                     assertThat(body).contains("href=\"/portfolio.html\"");
+                    assertThat(body).contains("href=\"/orders.html\"");
                     assertThat(body).contains("href=\"/activity.html\"");
                 });
     }
@@ -73,6 +74,21 @@ class TradepilotApplicationTests {
                     assertThat(body).contains("data-page=\"activity\"");
                     assertThat(body).contains("id=\"activity-body\"");
                     assertThat(body).contains("id=\"event-count\"");
+                });
+    }
+
+    @Test
+    void servesPaperOrdersPage() {
+        webTestClient.get().uri("/orders.html").exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("text/html")
+                .expectBody(String.class)
+                .value(body -> {
+                    assertThat(body).contains("data-page=\"orders\"");
+                    assertThat(body).contains("data-testid=\"paper-order-ticket\"");
+                    assertThat(body).contains("id=\"orders-body\"");
+                    assertThat(body).contains("id=\"executions-body\"");
+                    assertThat(body).contains("src=\"/orders.js\"");
                 });
     }
 

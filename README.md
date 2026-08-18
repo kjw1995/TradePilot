@@ -55,6 +55,7 @@ docker image ls "tradepilot-*"
 - 대시보드: `http://localhost:8080/`
 - 관심종목 관리: `http://localhost:8080/watchlist.html`
 - 내 포트폴리오: `http://localhost:8080/portfolio.html`
+- 모의 주문: `http://localhost:8080/orders.html`
 - 실시간 체결: `http://localhost:8080/activity.html`
 
 ```powershell
@@ -87,6 +88,23 @@ curl.exe "http://localhost:8080/api/v1/portfolio/accounts/local-account/summary"
 로컬 개발용 `local-account`와 삼성전자·SK하이닉스 보유 정보는 Flyway `V2__create_portfolio.sql`에서 생성합니다. 계좌와 보유 원장은 정합성이 중요한 관계형 데이터이므로 MySQL에 저장하며, Redis에는 원장 데이터를 중복 저장하지 않고 최신 시세 캐시만 유지합니다.
 
 실제 증권사 연동 시에는 증권사 계좌 API 응답을 `portfolio` 애플리케이션 포트에 맞춰 동기화하는 어댑터를 추가하고, 토큰과 계좌번호 원문은 저장소나 프론트엔드에 노출하지 않아야 합니다.
+
+## 모의 주문
+
+`모의 주문` 페이지에서는 로컬 계좌로 시장가와 지정가 매수·매도 주문을 연습할 수 있습니다. 시장가는 Redis/MySQL에서 조회한 최신 시세로 즉시 체결하고, 지정가는 주문 조건을 충족하는 실시간 틱이 들어오면 체결합니다. 주문과 체결 원장은 MySQL에 저장되며, 체결 시 계좌 예수금과 포지션도 하나의 반응형 트랜잭션 안에서 갱신됩니다.
+
+```powershell
+# 지정가 매수 주문
+curl.exe -X POST "http://localhost:8080/api/v1/accounts/local-account/orders" `
+  -H "Content-Type: application/json" `
+  -d '{"market":"KRX","symbol":"005930","side":"BUY","orderType":"LIMIT","quantity":1,"limitPrice":70000,"idempotencyKey":"local-example-001"}'
+
+# 주문 및 체결 내역 조회
+curl.exe "http://localhost:8080/api/v1/accounts/local-account/orders"
+curl.exe "http://localhost:8080/api/v1/accounts/local-account/orders/executions"
+```
+
+`idempotencyKey`는 같은 주문의 중복 접수를 방지합니다. 본 기능은 실제 증권사로 주문을 전송하지 않는 로컬 모의투자 전용입니다.
 
 ## 관심종목 관리
 
