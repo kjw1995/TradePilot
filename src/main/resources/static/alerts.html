@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#f6f9f7">
+    <meta name="description" content="TradePilot 실시간 가격 알림"><title>TradePilot · 가격 알림</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script><script src="/alerts.js" defer></script>
+</head>
+<body data-page="alerts">
+<div class="app-shell">
+    <aside class="sidebar" aria-label="주 메뉴">
+        <a class="brand" href="/" aria-label="TradePilot 홈"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 22.5 13 16l4 3.5L25 9"/><path d="M20 9h5v5"/></svg></span><span>TRADEPILOT</span></a>
+        <nav class="nav-list">
+            <a class="nav-item" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>대시보드</a>
+            <a class="nav-item" href="/watchlist.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>관심종목</a>
+            <a class="nav-item active" href="/alerts.html" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7M9.5 20h5"/></svg>가격 알림</a>
+            <a class="nav-item" href="/portfolio.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16v12H4zM7 7.5V5h10v2.5M4 12h16M15.5 15.5h2"/></svg>내 포트폴리오</a>
+            <a class="nav-item" href="/orders.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 9h8M8 13h5"/></svg>모의 주문</a>
+            <a class="nav-item" href="/activity.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>실시간 체결</a>
+        </nav>
+        <div class="sidebar-footer"><div class="system-card"><div class="system-card__top"><span>알림 엔진</span><span class="status-light" aria-hidden="true"></span></div><strong>REALTIME RULES</strong><small>가격 조건 실시간 평가</small></div><span class="version">TradePilot v0.1</span></div>
+    </aside>
+    <main class="main-content">
+        <header class="topbar"><button class="menu-button" type="button" aria-label="메뉴 열기" aria-controls="mobile-menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="topbar__title"><span>PRICE MONITOR</span><strong>가격 알림</strong></div><div class="topbar__right"><span class="market-clock" id="market-clock">--:--:-- KST</span><div class="connection-badge" id="connection-badge" data-status="connecting" role="status" aria-live="polite"><span class="connection-badge__dot" aria-hidden="true"></span><span id="connection-label">준비 중</span></div></div></header>
+
+        <section class="page-hero" aria-labelledby="page-title"><div><span class="eyebrow">REALTIME PRICE ALERTS</span><h1 id="page-title">원하는 가격을<br><em>놓치지 마세요.</em></h1></div><p>종목과 목표 가격을 등록하면 실시간 시세가 조건에 도달하는 순간 화면에서 알려드립니다. 한 번 트리거된 알림은 직접 다시 활성화할 수 있습니다.</p></section>
+
+        <section class="alert-summary" aria-label="가격 알림 요약">
+            <article><span>활성 알림</span><strong id="active-alert-count">0</strong><small>최대 30개</small></article>
+            <article><span>도달 완료</span><strong id="triggered-alert-count">0</strong><small>다시 활성화 가능</small></article>
+            <article class="alert-summary--latest"><span>최근 알림</span><strong id="latest-alert-name">아직 없음</strong><small id="latest-alert-detail">가격 조건을 등록해 보세요</small></article>
+        </section>
+
+        <section class="alert-workspace">
+            <article class="panel alert-creator" data-testid="price-alert-form" aria-labelledby="alert-form-title">
+                <header class="panel-header"><div><span class="panel-kicker">NEW ALERT</span><h2 id="alert-form-title">가격 조건 등록</h2></div><span class="alert-bell" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7M9.5 20h5"/></svg></span></header>
+                <form class="alert-form" id="alert-form">
+                    <input id="alert-symbol" name="symbol" type="hidden"><input id="alert-market" name="market" type="hidden" value="KRX">
+                    <div class="alert-search-field">
+                        <label for="alert-instrument-search">종목 검색</label>
+                        <span class="instrument-search-input"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="alert-instrument-search" type="search" maxlength="50" placeholder="종목명 또는 코드 입력" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="alert-instrument-results"></span>
+                        <span class="instrument-results" id="alert-instrument-results" role="listbox" hidden></span>
+                    </div>
+                    <fieldset class="alert-condition-selector"><legend>알림 조건</legend><label><input type="radio" name="condition" value="ABOVE" checked><span>목표가 이상</span></label><label><input type="radio" name="condition" value="BELOW"><span>목표가 이하</span></label></fieldset>
+                    <label class="alert-target-field"><span>목표 가격</span><input id="alert-target-price" name="targetPrice" type="number" min="1" step="1" placeholder="가격 입력" required></label>
+                    <div class="alert-price-preview"><span>선택 종목 현재가</span><strong id="alert-current-price">--</strong><small id="alert-price-gap">종목을 선택해 주세요</small></div>
+                    <p class="alert-message" id="alert-message" role="status" aria-live="polite">검색 결과에서 알림 종목을 선택해 주세요.</p>
+                    <button class="alert-submit" id="alert-submit" type="submit" disabled>가격 알림 등록</button>
+                </form>
+            </article>
+
+            <article class="panel alert-list-panel" aria-labelledby="alert-list-title">
+                <header class="panel-header"><div><span class="panel-kicker">MY ALERTS</span><h2 id="alert-list-title">등록한 가격 알림</h2></div><button class="refresh-button" id="alerts-refresh" type="button">새로고침</button></header>
+                <div class="table-wrap"><table class="alerts-table"><thead><tr><th>종목</th><th>조건</th><th>목표가</th><th>상태</th><th>도달 정보</th><th></th></tr></thead><tbody id="alerts-body"><tr class="empty-row"><td colspan="6">가격 알림을 불러오고 있습니다.</td></tr></tbody></table></div>
+                <footer class="alert-list-footer"><span><i></i>실시간 시세가 등록 조건을 평가합니다.</span><small>활성 알림은 계정당 최대 30개</small></footer>
+            </article>
+        </section>
+        <footer class="page-footer"><span>TRADEPILOT · REALTIME PRICE ALERTS</span><a href="/watchlist.html">관심종목 확인하기</a></footer>
+    </main>
+</div>
+<aside class="alert-toast" id="alert-toast" role="status" aria-live="assertive" hidden><span class="alert-toast__icon" aria-hidden="true">!</span><div><strong id="alert-toast-title">가격 도달</strong><p id="alert-toast-message"></p></div><button id="alert-toast-close" type="button" aria-label="알림 닫기">×</button></aside>
+<div class="mobile-menu" id="mobile-menu" hidden><a href="/">대시보드</a><a href="/watchlist.html">관심종목</a><a class="active" href="/alerts.html">가격 알림</a><a href="/portfolio.html">내 포트폴리오</a><a href="/orders.html">모의 주문</a><a href="/activity.html">실시간 체결</a></div>
+</body>
+</html>

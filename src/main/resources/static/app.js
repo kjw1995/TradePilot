@@ -986,7 +986,7 @@
         if (page === 'dashboard' || page === 'watchlist' || page === 'activity') initialRequests.push(fetchWatchlist());
         await Promise.all(initialRequests);
         syncSymbolRegistry();
-        if (page !== 'orders') {
+        if (page !== 'orders' && page !== 'alerts') {
             await fetchLatestQuotes();
             connectStream();
         }

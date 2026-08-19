@@ -1,5 +1,8 @@
 package com.kjw.tradepilot.common.web;
 
+import com.kjw.tradepilot.alert.application.PriceAlertLimitExceededException;
+import com.kjw.tradepilot.alert.application.PriceAlertNotFoundException;
+import com.kjw.tradepilot.alert.application.PriceAlertStateException;
 import com.kjw.tradepilot.watchlist.application.WatchlistItemAlreadyExistsException;
 import com.kjw.tradepilot.order.application.OrderNotCancelableException;
 import com.kjw.tradepilot.order.application.OrderRejectedException;
@@ -14,6 +17,27 @@ import java.util.List;
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    @ExceptionHandler(PriceAlertLimitExceededException.class)
+    ResponseEntity<ApiError> handlePriceAlertLimit(PriceAlertLimitExceededException exception) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
+                new ApiError("PRICE_ALERT_LIMIT_EXCEEDED", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
+    @ExceptionHandler(PriceAlertNotFoundException.class)
+    ResponseEntity<ApiError> handlePriceAlertNotFound(PriceAlertNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                new ApiError("PRICE_ALERT_NOT_FOUND", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
+    @ExceptionHandler(PriceAlertStateException.class)
+    ResponseEntity<ApiError> handlePriceAlertState(PriceAlertStateException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                new ApiError("PRICE_ALERT_INVALID_STATE", exception.getMessage(), List.of(), Instant.now())
+        );
+    }
+
     @ExceptionHandler(OrderRejectedException.class)
     ResponseEntity<ApiError> handleOrderRejected(OrderRejectedException exception) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(

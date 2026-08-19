@@ -33,6 +33,7 @@ class TradepilotApplicationTests {
                     assertThat(body).contains("TradePilot · 대시보드");
                     assertThat(body).contains("data-page=\"dashboard\"");
                     assertThat(body).contains("href=\"/watchlist.html\"");
+                    assertThat(body).contains("href=\"/alerts.html\"");
                     assertThat(body).contains("href=\"/portfolio.html\"");
                     assertThat(body).contains("href=\"/orders.html\"");
                     assertThat(body).contains("href=\"/activity.html\"");
@@ -89,6 +90,21 @@ class TradepilotApplicationTests {
                     assertThat(body).contains("id=\"orders-body\"");
                     assertThat(body).contains("id=\"executions-body\"");
                     assertThat(body).contains("src=\"/orders.js\"");
+                });
+    }
+
+    @Test
+    void servesPriceAlertsPage() {
+        webTestClient.get().uri("/alerts.html").exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith("text/html")
+                .expectBody(String.class)
+                .value(body -> {
+                    assertThat(body).contains("data-page=\"alerts\"");
+                    assertThat(body).contains("data-testid=\"price-alert-form\"");
+                    assertThat(body).contains("id=\"alerts-body\"");
+                    assertThat(body).contains("id=\"alert-toast\"");
+                    assertThat(body).contains("src=\"/alerts.js\"");
                 });
     }
 
