@@ -54,6 +54,7 @@ docker image ls "tradepilot-*"
 
 - 대시보드: `http://localhost:8080/`
 - 관심종목 관리: `http://localhost:8080/watchlist.html`
+- 가격 알림: `http://localhost:8080/alerts.html`
 - 내 포트폴리오: `http://localhost:8080/portfolio.html`
 - 모의 주문: `http://localhost:8080/orders.html`
 - 실시간 체결: `http://localhost:8080/activity.html`
@@ -105,6 +106,23 @@ curl.exe "http://localhost:8080/api/v1/accounts/local-account/orders/executions"
 ```
 
 `idempotencyKey`는 같은 주문의 중복 접수를 방지합니다. 본 기능은 실제 증권사로 주문을 전송하지 않는 로컬 모의투자 전용입니다.
+
+## 실시간 가격 알림
+
+`가격 알림` 페이지에서는 종목별 목표 가격 이상(`ABOVE`) 또는 이하(`BELOW`) 조건을 등록할 수 있습니다. 활성 알림은 실시간 시장 틱마다 평가되며, 조건을 처음 충족하면 `TRIGGERED` 상태로 전환하고 계정 전용 SSE로 화면 알림을 전달합니다. 한 번 도달한 알림은 다시 활성화할 수 있으며 계정당 활성 알림은 최대 30개입니다.
+
+```powershell
+# 삼성전자 85,000원 이상 알림 등록
+curl.exe -X POST "http://localhost:8080/api/v1/accounts/local-account/price-alerts" `
+  -H "Content-Type: application/json" `
+  -d '{"market":"KRX","symbol":"005930","condition":"ABOVE","targetPrice":85000}'
+
+# 알림 목록과 실시간 상태 구독
+curl.exe "http://localhost:8080/api/v1/accounts/local-account/price-alerts"
+curl.exe -N "http://localhost:8080/api/v1/accounts/local-account/price-alerts/stream"
+```
+
+가격 알림은 로컬 화면 알림이며 이메일, SMS 또는 외부 푸시 서비스로 개인정보를 전송하지 않습니다.
 
 ## 관심종목 관리
 
